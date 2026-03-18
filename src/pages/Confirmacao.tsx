@@ -77,8 +77,11 @@ const Confirmacao = () => {
   };
 
   const copyPixCode = () => {
-    const codeToCopy = pixCode || `00020126580014BR.GOV.BCB.PIX0136${code}520400005303986540${total.toFixed(2)}5802BR`;
-    navigator.clipboard.writeText(codeToCopy);
+    if (!pixCode) {
+      toast.error("Código PIX não disponível");
+      return;
+    }
+    navigator.clipboard.writeText(pixCode);
     setCopied(true);
     toast.success("Código PIX copiado!");
     setTimeout(() => setCopied(false), 3000);
