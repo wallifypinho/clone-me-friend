@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Bus, CalendarDays, Printer, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Confirmacao = () => {
   const [searchParams] = useSearchParams();
