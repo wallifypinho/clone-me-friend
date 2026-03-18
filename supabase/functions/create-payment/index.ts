@@ -116,17 +116,13 @@ Deno.serve(async (req) => {
     const pixData = gatewayData.pix || {};
     const result = {
       success: true,
-      transaction_id: gatewayData.id || gatewayData.transactionId || gatewayData._id,
+      transaction_id: gatewayData.id || gatewayData.transactionId,
       status: gatewayData.status || "pending",
-      // PIX copy-paste code (brCode / qrCode / pixCode)
-      pix_code: pixData.qrCode || pixData.brCode || gatewayData.brCode || gatewayData.pixCode || gatewayData.qrCode || "",
-      // QR Code image as base64
-      qr_code_base64: pixData.qrCodeImage || pixData.qrCodeBase64 || gatewayData.qrCodeImage || gatewayData.qrCodeBase64 || "",
-      // QR Code image as URL
-      qr_code_url: pixData.qrCodeUrl || pixData.qrCodeImage || gatewayData.qrCodeUrl || "",
+      pix_code: pixData.qrcode || pixData.qrCode || pixData.brCode || gatewayData.brCode || "",
+      qr_code_base64: "",
+      qr_code_url: "",
       amount,
-      expires_at: pixData.expiresAt || gatewayData.expiresAt || new Date(Date.now() + 3600 * 1000).toISOString(),
-      // Pass full response for debugging
+      expires_at: pixData.expirationDate || gatewayData.expiresAt || new Date(Date.now() + 3600 * 1000).toISOString(),
       raw: gatewayData,
     };
 
