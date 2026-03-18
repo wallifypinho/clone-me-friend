@@ -54,10 +54,21 @@ Deno.serve(async (req) => {
     const gatewayPayload: Record<string, any> = {
       paymentMethod: paymentMethod === "pix" ? "pix" : "credit_card",
       amount: Math.round(amount * 100), // cents
+      items: [
+        {
+          title: `Passagem ${bookingCode}`,
+          quantity: 1,
+          unitPrice: Math.round(amount * 100),
+          tangible: false,
+        },
+      ],
       customer: {
-        name: customerName || undefined,
-        document: customerCpf || undefined,
-        email: customerEmail || undefined,
+        name: customerName || "Cliente",
+        email: customerEmail || "cliente@email.com",
+        document: {
+          type: (customerCpf || "").length > 11 ? "cnpj" : "cpf",
+          number: customerCpf || "00000000000",
+        },
       },
     };
 
