@@ -49,10 +49,13 @@ const Pagamento = () => {
       }
 
       if (data?.error) {
+        console.error("Gateway error details:", data.details);
         toast.error(data.error);
         setLoading(false);
         return;
       }
+
+      console.log("AnubisPay response:", data);
 
       // Navigate to confirmation with payment data
       const params = new URLSearchParams(searchParams);
