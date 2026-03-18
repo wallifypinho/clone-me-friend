@@ -156,26 +156,44 @@ const Confirmacao = () => {
           )}
         </div>
 
-        {/* Thermal Ticket */}
-        <ThermalTicket
-          companyName={company || "VIAÇÃO EXEMPLO S.A."}
+        {/* Boarding Ticket (visible on page) */}
+        <BoardingTicket
+          code={code}
           origem={origem}
           destino={destino}
-          dataViagem={data}
-          horario={departure}
+          departure={departure}
           arrival={arrival}
-          poltrona={seats}
-          tipoServico={seatType}
-          nomePassageiro={nome}
-          documento={cpf}
-          localizador={code}
-          tarifa={price * seatList.length}
-          valorTotal={total}
-          formaPagamento={paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}
-          statusPagamento={paymentStatus}
-          numeroPedido={transactionId || code}
-          qrValue={code}
+          data={data}
+          company={company}
+          nome={nome}
+          cpf={cpf}
+          seats={seats}
+          seatType={seatType}
+          total={total}
         />
+
+        {/* Hidden thermal ticket for PDF export */}
+        <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+          <ThermalTicket
+            companyName={company || "VIAÇÃO EXEMPLO S.A."}
+            origem={origem}
+            destino={destino}
+            dataViagem={data}
+            horario={departure}
+            arrival={arrival}
+            poltrona={seats}
+            tipoServico={seatType}
+            nomePassageiro={nome}
+            documento={cpf}
+            localizador={code}
+            tarifa={price * seatList.length}
+            valorTotal={total}
+            formaPagamento={paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}
+            statusPagamento={paymentStatus}
+            numeroPedido={transactionId || code}
+            qrValue={code}
+          />
+        </div>
 
         {/* Actions */}
         <button
@@ -183,12 +201,6 @@ const Confirmacao = () => {
           className="w-full bg-foreground text-background font-bold py-3.5 rounded-lg text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
         >
           <Download className="w-4 h-4" /> Baixar / Imprimir Bilhete
-        </button>
-        <button
-          onClick={() => window.print()}
-          className="w-full border-2 border-border text-foreground font-bold py-3.5 rounded-lg text-sm flex items-center justify-center gap-2 hover:bg-muted transition-colors"
-        >
-          <Printer className="w-4 h-4" /> Imprimir Página
         </button>
         <button
           onClick={() => navigate("/")}
