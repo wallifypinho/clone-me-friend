@@ -9,6 +9,8 @@ import SelecionarAssento from "./pages/SelecionarAssento.tsx";
 import DadosPassageiro from "./pages/DadosPassageiro.tsx";
 import Pagamento from "./pages/Pagamento.tsx";
 import Confirmacao from "./pages/Confirmacao.tsx";
+import AdminPanel from "./pages/AdminPanel.tsx";
+import UserPanel from "./pages/UserPanel.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
