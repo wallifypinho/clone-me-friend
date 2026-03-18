@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PasswordGate from "@/components/PasswordGate";
-import { ArrowLeft, Search, Eye, RefreshCw, Settings, LogOut, CheckCircle, Clock, XCircle, Key } from "lucide-react";
+import { ArrowLeft, Search, Eye, RefreshCw, Settings, LogOut, CheckCircle, Clock, XCircle, Key, CreditCard, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 type Booking = {
@@ -35,9 +35,15 @@ const AdminPanel = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [tab, setTab] = useState<"bookings" | "settings">("bookings");
+  const [tab, setTab] = useState<"bookings" | "gateway" | "settings">("bookings");
   const [newAdminPass, setNewAdminPass] = useState("");
   const [newUserPass, setNewUserPass] = useState("");
+
+  // Gateway state
+  const [gatewayPublicKey, setGatewayPublicKey] = useState("");
+  const [gatewaySecretKey, setGatewaySecretKey] = useState("");
+  const [gatewayActive, setGatewayActive] = useState(false);
+  const [gatewayLoading, setGatewayLoading] = useState(false);
 
   const checkPassword = async (password: string) => {
     const { data } = await supabase
@@ -58,8 +64,28 @@ const AdminPanel = () => {
     setLoading(false);
   };
 
+  const fetchGatewaySettings = async () => {
+    setGatewayLoading(true);
+    const { data } = await supabase
+      .from("admin_settings")
+      .select("key, value")
+      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_active"]);
+
+    if (data) {
+      for (const row of data) {
+        if (row.key === "gateway_public_key") setGatewayPublicKey(row.value);
+        if (row.key === "gateway_secret_key") setGatewaySecretKey(row.value);
+        if (row.key === "gateway_active") setGatewayActive(row.value === "true");
+      }
+    }
+    setGatewayLoading(false);
+  };
+
   useEffect(() => {
-    if (authenticated) fetchBookings();
+    if (authenticated) {
+      fetchBookings();
+      fetchGatewaySettings();
+    }
   }, [authenticated]);
 
   const updateStatus = async (id: string, status: string) => {
@@ -75,6 +101,46 @@ const AdminPanel = () => {
     toast.success("Senha atualizada!");
     if (key === "admin_password") setNewAdminPass("");
     else setNewUserPass("");
+  };
+
+  const upsertSetting = async (key: string, value: string) => {
+    const { data: existing } = await supabase
+      .from("admin_settings")
+      .select("id")
+      .eq("key", key)
+      .single();
+
+    if (existing) {
+      await supabase.from("admin_settings").update({ value, updated_at: new Date().toISOString() }).eq("key", key);
+    } else {
+      await supabase.from("admin_settings").insert({ key, value });
+    }
+  };
+
+  const saveGateway = async () => {
+    if (!gatewayPublicKey.trim() || !gatewaySecretKey.trim()) {
+      toast.error("Preencha as duas chaves para ativar o gateway");
+      return;
+    }
+    setGatewayLoading(true);
+    await upsertSetting("gateway_public_key", gatewayPublicKey.trim());
+    await upsertSetting("gateway_secret_key", gatewaySecretKey.trim());
+    await upsertSetting("gateway_active", "true");
+    setGatewayActive(true);
+    setGatewayLoading(false);
+    toast.success("Gateway AnubisPay salvo e ativado!");
+  };
+
+  const removeGateway = async () => {
+    setGatewayLoading(true);
+    await upsertSetting("gateway_public_key", "");
+    await upsertSetting("gateway_secret_key", "");
+    await upsertSetting("gateway_active", "false");
+    setGatewayPublicKey("");
+    setGatewaySecretKey("");
+    setGatewayActive(false);
+    setGatewayLoading(false);
+    toast.success("Chaves do gateway removidas");
   };
 
   const filtered = bookings.filter((b) => {
@@ -123,18 +189,25 @@ const AdminPanel = () => {
 
       {/* Tabs */}
       <div className="max-w-4xl mx-auto p-4">
-        <div className="flex gap-2 mb-4">
-          <button onClick={() => setTab("bookings")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === "bookings" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-foreground"}`}>
-            Reservas
-          </button>
-          <button onClick={() => setTab("settings")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === "settings" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-foreground"}`}>
-            <Settings className="w-4 h-4 inline mr-1" />Configurações
-          </button>
+        <div className="flex gap-2 mb-4 flex-wrap">
+          {[
+            { id: "bookings" as const, label: "Reservas", icon: null },
+            { id: "gateway" as const, label: "Pagamento", icon: <CreditCard className="w-4 h-4 inline mr-1" /> },
+            { id: "settings" as const, label: "Configurações", icon: <Settings className="w-4 h-4 inline mr-1" /> },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === t.id ? "bg-primary text-primary-foreground" : "bg-card border border-border text-foreground"}`}
+            >
+              {t.icon}{t.label}
+            </button>
+          ))}
         </div>
 
+        {/* ===== RESERVAS ===== */}
         {tab === "bookings" && (
           <>
-            {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -151,7 +224,6 @@ const AdminPanel = () => {
               </button>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[
                 { label: "Total", count: bookings.length, color: "text-foreground" },
@@ -165,7 +237,6 @@ const AdminPanel = () => {
               ))}
             </div>
 
-            {/* Table */}
             <div className="bg-card border border-border rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -217,20 +288,104 @@ const AdminPanel = () => {
           </>
         )}
 
+        {/* ===== GATEWAY DE PAGAMENTO ===== */}
+        {tab === "gateway" && (
+          <div className="space-y-4">
+            <div className="bg-card border border-border rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-foreground flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" /> Gateway de Pagamento
+                </h3>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${gatewayActive ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"}`}>
+                  {gatewayActive ? "Ativo" : "Inativo"}
+                </span>
+              </div>
+
+              <div className="bg-muted/50 border border-border rounded-lg p-4 mb-5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <CreditCard className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm text-foreground">AnubisPay</p>
+                    <p className="text-xs text-muted-foreground">Gateway principal • PIX e Cartão de Crédito</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Configure suas chaves da AnubisPay para processar pagamentos. Você pode alterar ou remover as chaves a qualquer momento.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">Public Key</label>
+                  <input
+                    type="text"
+                    value={gatewayPublicKey}
+                    onChange={(e) => setGatewayPublicKey(e.target.value)}
+                    placeholder="pk_live_..."
+                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">Secret Key</label>
+                  <input
+                    type="password"
+                    value={gatewaySecretKey}
+                    onChange={(e) => setGatewaySecretKey(e.target.value)}
+                    placeholder="sk_live_..."
+                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-5">
+                <button
+                  onClick={saveGateway}
+                  disabled={gatewayLoading || !gatewayPublicKey.trim() || !gatewaySecretKey.trim()}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" /> {gatewayActive ? "Atualizar Chaves" : "Salvar e Ativar"}
+                </button>
+                {gatewayActive && (
+                  <button
+                    onClick={removeGateway}
+                    disabled={gatewayLoading}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 border border-destructive text-destructive rounded-lg text-sm font-semibold hover:bg-destructive/10 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" /> Remover
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-card border border-border rounded-xl p-5">
+              <h4 className="font-semibold text-sm text-foreground mb-2">ℹ️ Como funciona</h4>
+              <ul className="text-xs text-muted-foreground space-y-1.5 list-disc list-inside">
+                <li>As chaves são armazenadas de forma segura no banco de dados</li>
+                <li>Ao ativar, os pagamentos via PIX e Cartão serão processados pela AnubisPay</li>
+                <li>Você pode trocar as chaves ou desativar o gateway a qualquer momento</li>
+                <li>Sem gateway ativo, os pedidos serão registrados como "pendente" para confirmação manual</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* ===== CONFIGURAÇÕES ===== */}
         {tab === "settings" && (
           <div className="space-y-4">
             <div className="bg-card border border-border rounded-xl p-5">
-              <h3 className="font-bold text-foreground mb-4 flex items-center gap-2"><Key className="w-4 h-4 text-primary" />Alterar Senhas</h3>
+              <h3 className="font-bold text-foreground mb-4 flex items-center gap-2"><Key className="w-4 h-4 text-primary" />Alterar Senhas de Acesso</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-1 block">Senha do Admin</label>
+                  <label className="text-sm font-medium text-foreground mb-1 block">Senha do Painel Admin</label>
                   <div className="flex gap-2">
                     <input type="password" value={newAdminPass} onChange={(e) => setNewAdminPass(e.target.value)} placeholder="Nova senha admin" className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-background" />
                     <button onClick={() => updatePassword("admin_password", newAdminPass)} disabled={!newAdminPass} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold disabled:opacity-50">Salvar</button>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-1 block">Senha do Usuário</label>
+                  <label className="text-sm font-medium text-foreground mb-1 block">Senha da Área do Usuário</label>
                   <div className="flex gap-2">
                     <input type="password" value={newUserPass} onChange={(e) => setNewUserPass(e.target.value)} placeholder="Nova senha usuário" className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-background" />
                     <button onClick={() => updatePassword("user_password", newUserPass)} disabled={!newUserPass} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold disabled:opacity-50">Salvar</button>

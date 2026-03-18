@@ -1,0 +1,1 @@
+CREATE POLICY "Anyone can insert admin_settings" ON public.admin_settings FOR INSERT TO public WITH CHECK (true);
