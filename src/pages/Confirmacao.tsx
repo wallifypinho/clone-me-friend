@@ -201,17 +201,19 @@ const PixPaymentSection = ({
       Pague via <span className="text-primary font-semibold">PIX</span> para confirmar sua viagem
     </p>
 
-    {/* QR Code */}
-    <div className="w-52 h-52 mx-auto bg-background rounded-xl border-2 border-border mb-3 flex items-center justify-center overflow-hidden">
-      {hasQrImage ? (
+    {/* QR Code - generated from PIX code */}
+    <div className="w-52 h-52 mx-auto bg-background rounded-xl border-2 border-border mb-3 flex items-center justify-center overflow-hidden p-2">
+      {pixCode ? (
+        <QRCodeSVG value={pixCode} size={180} level="M" />
+      ) : hasQrImage ? (
         <img
           src={qrBase64 ? `data:image/png;base64,${qrBase64}` : qrUrl}
           alt="QR Code PIX"
           className="w-48 h-48 object-contain"
         />
       ) : (
-        <div className="w-44 h-44 flex items-center justify-center text-muted-foreground text-xs text-center p-4">
-          Aguardando QR Code do gateway...
+        <div className="text-muted-foreground text-xs text-center p-4">
+          Aguardando QR Code...
         </div>
       )}
     </div>
