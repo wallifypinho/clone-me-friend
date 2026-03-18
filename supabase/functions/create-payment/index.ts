@@ -6,6 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Base64 encode for Basic Auth
+function toBase64(str: string): string {
+  return btoa(str);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -42,71 +47,76 @@ Deno.serve(async (req) => {
       );
     }
 
-    // AnubisPay API call
-    // Standard payment gateway pattern - adjust endpoint/format when API docs are available
-    const gatewayPayload = {
+    // AnubisPay uses Basic Auth: base64(publicKey:secretKey)
+    const basicAuth = toBase64(`${publicKey}:${secretKey}`);
+
+    // AnubisPay API payload - simple format per their docs
+    const gatewayPayload: Record<string, any> = {
+      paymentMethod: paymentMethod === "pix" ? "pix" : "credit_card",
       amount: Math.round(amount * 100), // cents
-      payment_method: paymentMethod === "pix" ? "pix" : "credit_card",
-      reference: bookingCode,
       customer: {
-        name: customerName,
-        document: customerCpf,
+        name: customerName || undefined,
+        document: customerCpf || undefined,
         email: customerEmail || undefined,
       },
-      pix: paymentMethod === "pix" ? { expires_in: 3600 } : undefined,
     };
 
-    // AnubisPay API endpoint (adjust when official docs are available)
-    const gatewayBaseUrl = "https://api.anubispay.com.br/v1";
+    console.log("Calling AnubisPay:", JSON.stringify(gatewayPayload));
 
-    const gatewayResponse = await fetch(`${gatewayBaseUrl}/transactions`, {
+    const gatewayResponse = await fetch("https://api.anubispay.com.br/v1/transactions", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${secretKey}`,
-        "X-Public-Key": publicKey,
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": `Basic ${basicAuth}`,
       },
       body: JSON.stringify(gatewayPayload),
     });
 
-    if (!gatewayResponse.ok) {
-      const errorText = await gatewayResponse.text();
-      console.error("Gateway error:", gatewayResponse.status, errorText);
+    const responseText = await gatewayResponse.text();
+    console.log("AnubisPay response status:", gatewayResponse.status);
+    console.log("AnubisPay response body:", responseText);
 
-      // Fallback: generate a local PIX-like response for testing
-      // Remove this block once the real API is confirmed working
-      const fallbackPixCode = `00020126580014BR.GOV.BCB.PIX0136${bookingCode}520400005303986540${amount.toFixed(2)}5802BR5913RODOVIARIA6014BRASIL62070503***6304`;
-      const fallbackQrBase64 = ""; // Will use text-based QR
-
+    let gatewayData: any;
+    try {
+      gatewayData = JSON.parse(responseText);
+    } catch {
+      console.error("Failed to parse AnubisPay response as JSON");
       return new Response(
-        JSON.stringify({
-          success: true,
-          fallback: true,
-          transaction_id: `local_${Date.now()}`,
-          status: "pending",
-          pix_code: fallbackPixCode,
-          qr_code_base64: fallbackQrBase64,
-          amount,
-          expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Resposta inválida do gateway de pagamento", details: responseText }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const gatewayData = await gatewayResponse.json();
+    if (!gatewayResponse.ok) {
+      console.error("Gateway error:", gatewayResponse.status, gatewayData);
+      return new Response(
+        JSON.stringify({ 
+          error: "Erro no gateway de pagamento", 
+          status: gatewayResponse.status,
+          details: gatewayData 
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Map gateway response to standard format
-    // Adjust field names based on actual AnubisPay response structure
+    // Map AnubisPay response - extract PIX data
+    // Common fields: id, status, pix.qrCode, pix.qrCodeImage, pix.expiresAt, brCode, qrCodeBase64, qrCodeUrl
+    const pixData = gatewayData.pix || {};
     const result = {
       success: true,
-      fallback: false,
-      transaction_id: gatewayData.id || gatewayData.transaction_id,
+      transaction_id: gatewayData.id || gatewayData.transactionId || gatewayData._id,
       status: gatewayData.status || "pending",
-      pix_code: gatewayData.pix?.qr_code || gatewayData.pix_code || gatewayData.brCode,
-      qr_code_base64: gatewayData.pix?.qr_code_image || gatewayData.qr_code_base64 || gatewayData.qrCodeImage,
-      qr_code_url: gatewayData.pix?.qr_code_url || gatewayData.qr_code_url,
+      // PIX copy-paste code (brCode / qrCode / pixCode)
+      pix_code: pixData.qrCode || pixData.brCode || gatewayData.brCode || gatewayData.pixCode || gatewayData.qrCode || "",
+      // QR Code image as base64
+      qr_code_base64: pixData.qrCodeImage || pixData.qrCodeBase64 || gatewayData.qrCodeImage || gatewayData.qrCodeBase64 || "",
+      // QR Code image as URL
+      qr_code_url: pixData.qrCodeUrl || pixData.qrCodeImage || gatewayData.qrCodeUrl || "",
       amount,
-      expires_at: gatewayData.pix?.expires_at || gatewayData.expires_at,
+      expires_at: pixData.expiresAt || gatewayData.expiresAt || new Date(Date.now() + 3600 * 1000).toISOString(),
+      // Pass full response for debugging
+      raw: gatewayData,
     };
 
     // Update booking with transaction info

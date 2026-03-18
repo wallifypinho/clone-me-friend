@@ -77,8 +77,11 @@ const Confirmacao = () => {
   };
 
   const copyPixCode = () => {
-    const codeToCopy = pixCode || `00020126580014BR.GOV.BCB.PIX0136${code}520400005303986540${total.toFixed(2)}5802BR`;
-    navigator.clipboard.writeText(codeToCopy);
+    if (!pixCode) {
+      toast.error("Código PIX não disponível");
+      return;
+    }
+    navigator.clipboard.writeText(pixCode);
     setCopied(true);
     toast.success("Código PIX copiado!");
     setTimeout(() => setCopied(false), 3000);
@@ -119,11 +122,11 @@ const Confirmacao = () => {
           </div>
           <h2 className="text-xl font-bold text-foreground">Pedido Criado!</h2>
 
-          {paymentMethod === "pix" && (
+    {paymentMethod === "pix" && (
             <PixPaymentSection
               total={total}
-              pixCode={pixCode || `00020126580014BR.GOV.BCB.PIX0136${code}520400005303986540${total.toFixed(2)}5802BR`}
-              hasQrImage={!!hasQrImage}
+              pixCode={pixCode}
+              hasQrImage={!!(qrBase64 || qrUrl)}
               qrBase64={qrBase64}
               qrUrl={qrUrl}
               copied={copied}
@@ -206,10 +209,8 @@ const PixPaymentSection = ({
           className="w-48 h-48 object-contain"
         />
       ) : (
-        <div className="w-44 h-44 bg-foreground rounded grid grid-cols-8 gap-px p-1">
-          {Array.from({ length: 64 }, (_, i) => (
-            <div key={i} className={`${Math.random() > 0.4 ? "bg-foreground" : "bg-background"}`} />
-          ))}
+        <div className="w-44 h-44 flex items-center justify-center text-muted-foreground text-xs text-center p-4">
+          Aguardando QR Code do gateway...
         </div>
       )}
     </div>
@@ -233,12 +234,18 @@ const PixPaymentSection = ({
     </button>
 
     {/* PIX code preview */}
-    <div className="bg-muted rounded-lg p-3 mb-3">
-      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wide mb-1">Código Copia e Cola</p>
-      <p className="text-xs text-foreground font-mono break-all leading-relaxed">
-        {pixCode.length > 80 ? pixCode.slice(0, 80) + "..." : pixCode}
-      </p>
-    </div>
+    {pixCode ? (
+      <div className="bg-muted rounded-lg p-3 mb-3">
+        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wide mb-1">Código Copia e Cola</p>
+        <p className="text-xs text-foreground font-mono break-all leading-relaxed select-all">
+          {pixCode}
+        </p>
+      </div>
+    ) : (
+      <div className="bg-muted rounded-lg p-3 mb-3">
+        <p className="text-xs text-muted-foreground">Aguardando geração do código PIX...</p>
+      </div>
+    )}
 
     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wide mb-4">
       Finalize seu pagamento para confirmar sua viagem e validar seu bilhete de embarque
