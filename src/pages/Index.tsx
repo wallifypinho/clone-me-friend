@@ -22,64 +22,46 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section */}
-      <section className="relative brand-gradient-hero overflow-hidden">
-        {/* Decorative glows */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-white/[0.06] blur-2xl" />
-          <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-white/[0.04] blur-2xl" />
-          <div className="absolute top-1/2 left-1/3 w-64 h-64 rounded-full bg-white/[0.03] blur-3xl" />
-        </div>
+      {/* Hero + Search */}
+      <section className="relative">
+        {/* Purple gradient banner */}
+        <div className="brand-gradient-hero relative overflow-hidden">
+          {/* Subtle decorative glows */}
+          <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/[0.06]" />
+          <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-white/[0.04]" />
 
-        {/* Hero content */}
-        <div className="container relative z-10">
-          <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-6 pt-10 pb-28 md:pt-14 md:pb-32 lg:pt-16 lg:pb-36">
-            {/* Left side - promo text */}
-            <div className="flex-1 text-center md:text-left">
-              <span className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm text-primary-foreground text-[11px] md:text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">
+          <div className="container relative z-10 flex items-center gap-4 px-5 py-8 md:py-12 lg:py-14">
+            {/* Left - text */}
+            <div className="flex-1 min-w-0">
+              <span className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm text-primary-foreground text-[10px] md:text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-2 md:mb-3">
                 🎉 Semana do Consumidor
               </span>
-              <h1 className="text-primary-foreground text-3xl sm:text-4xl md:text-[2.75rem] lg:text-5xl font-extrabold leading-[1.15] tracking-tight">
+              <h1 className="text-primary-foreground text-xl sm:text-2xl md:text-4xl lg:text-5xl font-extrabold leading-tight">
                 A hora é agora
                 <br />
                 e não volta mais!
               </h1>
             </div>
 
-            {/* Right side - discount block */}
-            <div className="flex-shrink-0">
-              <div className="relative bg-white/15 backdrop-blur-md rounded-2xl px-8 py-6 md:px-10 md:py-8 text-center min-w-[180px] md:min-w-[220px] border border-white/20 shadow-lg">
-                {/* Subtle glow behind block */}
-                <div className="absolute inset-0 rounded-2xl bg-white/[0.05] blur-xl -z-10" />
-                <p className="text-primary-foreground text-6xl md:text-7xl lg:text-8xl font-black leading-none tracking-tight">
-                  50%
-                </p>
-                <p className="text-primary-foreground text-2xl md:text-3xl font-extrabold uppercase -mt-1">
-                  OFF
-                </p>
-                <div className="mt-3 bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 inline-block border border-white/10">
-                  <span className="text-[10px] md:text-xs text-primary-foreground/70 uppercase tracking-wider font-medium block">
-                    cupom
-                  </span>
-                  <p className="text-primary-foreground text-sm md:text-base font-bold tracking-[0.15em]">
-                    SOHOJE50
-                  </p>
-                </div>
+            {/* Right - discount block */}
+            <div className="shrink-0 bg-white/15 backdrop-blur-sm rounded-xl px-4 py-3 md:px-8 md:py-6 text-center border border-white/20">
+              <p className="text-primary-foreground text-4xl md:text-7xl font-black leading-none">50%</p>
+              <p className="text-primary-foreground text-lg md:text-2xl font-extrabold uppercase">OFF</p>
+              <div className="mt-1.5 md:mt-2 bg-white/20 rounded-md px-2 py-1 md:px-3 md:py-1.5">
+                <span className="text-[8px] md:text-[10px] text-primary-foreground/70 uppercase tracking-wider block leading-none">cupom</span>
+                <p className="text-primary-foreground text-[11px] md:text-sm font-bold tracking-wider leading-tight">SOHOJE50</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* SearchForm floating over hero bottom */}
-        <div className="absolute bottom-0 left-0 right-0 translate-y-1/2 z-20">
+        {/* Search card - on mobile no overlap, on desktop overlap */}
+        <div className="relative z-20 -mt-6 md:-mt-10 pb-2">
           <div className="container">
             <SearchForm />
           </div>
         </div>
       </section>
-
-      {/* Spacer for search form overlap */}
-      <div className="h-48 md:h-56 lg:h-52" />
 
       {/* Best Prices */}
       <section className="py-12">
