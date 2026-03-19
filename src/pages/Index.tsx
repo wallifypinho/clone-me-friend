@@ -24,24 +24,26 @@ const Index = () => {
 
       {/* Hero */}
       <section className="relative">
-        <div className="brand-gradient-hero h-[320px] md:h-[400px] flex items-center justify-center overflow-hidden pt-8 pb-24 md:pb-28">
-          <div className="relative z-10 text-center px-4">
-            <span className="inline-block bg-white/20 backdrop-blur-sm text-white text-xs md:text-sm font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-3">
+        <div className="brand-gradient-hero h-[280px] md:h-[360px] flex items-stretch overflow-hidden">
+          {/* Left side - text */}
+          <div className="flex-1 flex flex-col justify-center px-6 md:px-12 py-6 relative z-10">
+            <span className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm text-white text-[10px] md:text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full w-fit mb-3">
               🎉 Semana do Consumidor
             </span>
-            <h1 className="text-white text-xl md:text-3xl lg:text-4xl font-extrabold leading-tight mb-1">
-              Sua viagem com até
+            <h1 className="text-white text-xl md:text-3xl lg:text-4xl font-extrabold leading-tight">
+              A hora é agora<br />e não volta mais!
             </h1>
-            <div className="flex items-baseline justify-center gap-2 mb-2">
-              <span className="text-white text-7xl md:text-9xl font-black tracking-tighter leading-none">50%</span>
-              <span className="text-white/90 text-xl md:text-3xl font-extrabold uppercase leading-none">
-                OFF
-              </span>
-            </div>
-            <p className="text-white/80 text-xs md:text-sm font-medium">
-              Aproveite! Use o cupom <span className="bg-white/25 backdrop-blur-sm px-2 py-0.5 rounded font-bold text-white">SOHOJE50</span>
-            </p>
           </div>
+          {/* Right side - discount */}
+          <div className="w-[140px] md:w-[220px] flex flex-col items-center justify-center bg-white/10 backdrop-blur-sm relative z-10">
+            <span className="text-white text-5xl md:text-7xl font-black leading-none">50%</span>
+            <span className="text-white text-xl md:text-2xl font-extrabold uppercase">OFF</span>
+            <div className="mt-2 bg-white/20 rounded px-2 py-0.5">
+              <span className="text-[9px] md:text-xs text-white/70 uppercase tracking-wide">cupom</span>
+              <p className="text-white text-xs md:text-sm font-bold tracking-wider">SOHOJE50</p>
+            </div>
+          </div>
+          {/* Decorative elements */}
           <div className="absolute -top-20 -right-20 w-72 h-72 bg-white/5 rounded-full" />
           <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-white/5 rounded-full" />
         </div>
