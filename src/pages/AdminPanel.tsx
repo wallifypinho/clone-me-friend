@@ -171,19 +171,22 @@ const AdminPanel = () => {
     setGatewayLoading(true);
     await upsertSetting("gateway_public_key", gatewayPublicKey.trim());
     await upsertSetting("gateway_secret_key", gatewaySecretKey.trim());
+    await upsertSetting("gateway_api_url", gatewayApiUrl.trim());
     await upsertSetting("gateway_active", "true");
     setGatewayActive(true);
     setGatewayLoading(false);
-    toast.success("Gateway AnubisPay salvo e ativado!");
+    toast.success("Gateway salvo e ativado!");
   };
 
   const removeGateway = async () => {
     setGatewayLoading(true);
     await upsertSetting("gateway_public_key", "");
     await upsertSetting("gateway_secret_key", "");
+    await upsertSetting("gateway_api_url", "");
     await upsertSetting("gateway_active", "false");
     setGatewayPublicKey("");
     setGatewaySecretKey("");
+    setGatewayApiUrl("https://api.hurapay.com.br/v1/transactions");
     setGatewayActive(false);
     setGatewayLoading(false);
     toast.success("Chaves do gateway removidas");
