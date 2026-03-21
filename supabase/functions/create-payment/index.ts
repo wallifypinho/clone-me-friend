@@ -6,7 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Base64 encode for Basic Auth
 function toBase64(str: string): string {
   return btoa(str);
 }
@@ -31,14 +30,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch gateway keys from admin_settings
+    // Fetch gateway keys and URL from admin_settings
     const { data: keys } = await supabase
       .from("admin_settings")
       .select("key, value")
-      .in("key", ["gateway_public_key", "gateway_secret_key"]);
+      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_api_url"]);
 
     const publicKey = keys?.find((k: any) => k.key === "gateway_public_key")?.value;
     const secretKey = keys?.find((k: any) => k.key === "gateway_secret_key")?.value;
+    const gatewayUrl = keys?.find((k: any) => k.key === "gateway_api_url")?.value || "https://api.hurapay.com.br/v1/transactions";
 
     if (!publicKey || !secretKey) {
       return new Response(
@@ -47,13 +47,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // AnubisPay uses Basic Auth: base64(publicKey:secretKey)
     const basicAuth = toBase64(`${publicKey}:${secretKey}`);
 
-    // AnubisPay API payload - simple format per their docs
     const gatewayPayload: Record<string, any> = {
       paymentMethod: paymentMethod === "pix" ? "pix" : "credit_card",
-      amount: Math.round(amount * 100), // cents
+      amount: Math.round(amount * 100),
       items: [
         {
           title: `Passagem ${bookingCode}`,
@@ -72,9 +70,9 @@ Deno.serve(async (req) => {
       },
     };
 
-    console.log("Calling AnubisPay:", JSON.stringify(gatewayPayload));
+    console.log("Calling gateway:", gatewayUrl, JSON.stringify(gatewayPayload));
 
-    const gatewayResponse = await fetch("https://api.anubispay.com.br/v1/transactions", {
+    const gatewayResponse = await fetch(gatewayUrl, {
       method: "POST",
       headers: {
         "accept": "application/json",
@@ -85,14 +83,14 @@ Deno.serve(async (req) => {
     });
 
     const responseText = await gatewayResponse.text();
-    console.log("AnubisPay response status:", gatewayResponse.status);
-    console.log("AnubisPay response body:", responseText);
+    console.log("Gateway response status:", gatewayResponse.status);
+    console.log("Gateway response body:", responseText);
 
     let gatewayData: any;
     try {
       gatewayData = JSON.parse(responseText);
     } catch {
-      console.error("Failed to parse AnubisPay response as JSON");
+      console.error("Failed to parse gateway response as JSON");
       return new Response(
         JSON.stringify({ error: "Resposta inválida do gateway de pagamento", details: responseText }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -111,8 +109,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Map AnubisPay response - extract PIX data
-    // Common fields: id, status, pix.qrCode, pix.qrCodeImage, pix.expiresAt, brCode, qrCodeBase64, qrCodeUrl
     const pixData = gatewayData.pix || {};
     const result = {
       success: true,
@@ -126,7 +122,6 @@ Deno.serve(async (req) => {
       raw: gatewayData,
     };
 
-    // Update booking with transaction info
     await supabase
       .from("bookings")
       .update({

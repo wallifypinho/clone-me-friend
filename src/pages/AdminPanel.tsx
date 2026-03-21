@@ -86,6 +86,7 @@ const AdminPanel = () => {
   // Gateway state
   const [gatewayPublicKey, setGatewayPublicKey] = useState("");
   const [gatewaySecretKey, setGatewaySecretKey] = useState("");
+  const [gatewayApiUrl, setGatewayApiUrl] = useState("https://api.hurapay.com.br/v1/transactions");
   const [gatewayActive, setGatewayActive] = useState(false);
   const [gatewayLoading, setGatewayLoading] = useState(false);
 
@@ -113,13 +114,14 @@ const AdminPanel = () => {
     const { data } = await supabase
       .from("admin_settings")
       .select("key, value")
-      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_active"]);
+      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_active", "gateway_api_url"]);
 
     if (data) {
       for (const row of data) {
         if (row.key === "gateway_public_key") setGatewayPublicKey(row.value);
         if (row.key === "gateway_secret_key") setGatewaySecretKey(row.value);
         if (row.key === "gateway_active") setGatewayActive(row.value === "true");
+        if (row.key === "gateway_api_url" && row.value) setGatewayApiUrl(row.value);
       }
     }
     setGatewayLoading(false);
@@ -169,19 +171,22 @@ const AdminPanel = () => {
     setGatewayLoading(true);
     await upsertSetting("gateway_public_key", gatewayPublicKey.trim());
     await upsertSetting("gateway_secret_key", gatewaySecretKey.trim());
+    await upsertSetting("gateway_api_url", gatewayApiUrl.trim());
     await upsertSetting("gateway_active", "true");
     setGatewayActive(true);
     setGatewayLoading(false);
-    toast.success("Gateway AnubisPay salvo e ativado!");
+    toast.success("Gateway salvo e ativado!");
   };
 
   const removeGateway = async () => {
     setGatewayLoading(true);
     await upsertSetting("gateway_public_key", "");
     await upsertSetting("gateway_secret_key", "");
+    await upsertSetting("gateway_api_url", "");
     await upsertSetting("gateway_active", "false");
     setGatewayPublicKey("");
     setGatewaySecretKey("");
+    setGatewayApiUrl("https://api.hurapay.com.br/v1/transactions");
     setGatewayActive(false);
     setGatewayLoading(false);
     toast.success("Chaves do gateway removidas");
@@ -351,23 +356,33 @@ const AdminPanel = () => {
                     <CreditCard className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-foreground">AnubisPay</p>
+                    <p className="font-semibold text-sm text-foreground">HuraPay</p>
                     <p className="text-xs text-muted-foreground">Gateway principal • PIX e Cartão de Crédito</p>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Configure suas chaves da AnubisPay para processar pagamentos. Você pode alterar ou remover as chaves a qualquer momento.
+                  Configure suas chaves da HuraPay para processar pagamentos. Você pode alterar ou remover as chaves a qualquer momento.
                 </p>
               </div>
 
               <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">URL da API</label>
+                  <input
+                    type="text"
+                    value={gatewayApiUrl}
+                    onChange={(e) => setGatewayApiUrl(e.target.value)}
+                    placeholder="https://api.hurapay.com.br/v1/transactions"
+                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
                 <div>
                   <label className="text-sm font-medium text-foreground mb-1.5 block">Public Key</label>
                   <input
                     type="text"
                     value={gatewayPublicKey}
                     onChange={(e) => setGatewayPublicKey(e.target.value)}
-                    placeholder="pk_live_..."
+                    placeholder="hurapay_live_..."
                     className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
@@ -407,7 +422,7 @@ const AdminPanel = () => {
               <h4 className="font-semibold text-sm text-foreground mb-2">ℹ️ Como funciona</h4>
               <ul className="text-xs text-muted-foreground space-y-1.5 list-disc list-inside">
                 <li>As chaves são armazenadas de forma segura no banco de dados</li>
-                <li>Ao ativar, os pagamentos via PIX e Cartão serão processados pela AnubisPay</li>
+                <li>Ao ativar, os pagamentos via PIX e Cartão serão processados pela HuraPay</li>
                 <li>Você pode trocar as chaves ou desativar o gateway a qualquer momento</li>
                 <li>Sem gateway ativo, os pedidos serão registrados como "pendente" para confirmação manual</li>
               </ul>
