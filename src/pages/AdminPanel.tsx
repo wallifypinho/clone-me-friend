@@ -86,6 +86,7 @@ const AdminPanel = () => {
   // Gateway state
   const [gatewayPublicKey, setGatewayPublicKey] = useState("");
   const [gatewaySecretKey, setGatewaySecretKey] = useState("");
+  const [gatewayApiUrl, setGatewayApiUrl] = useState("https://api.hurapay.com.br/v1/transactions");
   const [gatewayActive, setGatewayActive] = useState(false);
   const [gatewayLoading, setGatewayLoading] = useState(false);
 
