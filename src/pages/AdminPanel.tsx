@@ -84,11 +84,28 @@ const AdminPanel = () => {
   const [newUserPass, setNewUserPass] = useState("");
 
   // Gateway state
+  const [gatewayProvider, setGatewayProvider] = useState<"hurapay" | "anubispay">("hurapay");
   const [gatewayPublicKey, setGatewayPublicKey] = useState("");
   const [gatewaySecretKey, setGatewaySecretKey] = useState("");
-  const [gatewayApiUrl, setGatewayApiUrl] = useState("https://api.hurapay.com.br/v1/transactions");
   const [gatewayActive, setGatewayActive] = useState(false);
   const [gatewayLoading, setGatewayLoading] = useState(false);
+
+  const GATEWAY_CONFIG = {
+    hurapay: {
+      name: "HuraPay",
+      apiUrl: "https://api.hurapay.com.br/v1/transactions",
+      pkPlaceholder: "hurapay_live_...",
+      skPlaceholder: "sk_live_...",
+      description: "Gateway HuraPay • PIX e Cartão de Crédito",
+    },
+    anubispay: {
+      name: "AnubisPay",
+      apiUrl: "https://api.anubispay.com.br/v1/transactions",
+      pkPlaceholder: "pk_...",
+      skPlaceholder: "sk_...",
+      description: "Gateway AnubisPay • PIX e Cartão de Crédito",
+    },
+  };
 
   const checkPassword = async (password: string) => {
     const { data } = await supabase
