@@ -114,13 +114,14 @@ const AdminPanel = () => {
     const { data } = await supabase
       .from("admin_settings")
       .select("key, value")
-      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_active"]);
+      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_active", "gateway_api_url"]);
 
     if (data) {
       for (const row of data) {
         if (row.key === "gateway_public_key") setGatewayPublicKey(row.value);
         if (row.key === "gateway_secret_key") setGatewaySecretKey(row.value);
         if (row.key === "gateway_active") setGatewayActive(row.value === "true");
+        if (row.key === "gateway_api_url" && row.value) setGatewayApiUrl(row.value);
       }
     }
     setGatewayLoading(false);
