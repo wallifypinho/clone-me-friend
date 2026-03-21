@@ -29,7 +29,7 @@ type Booking = {
 
 const LinkShareSection = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const baseUrl = window.location.origin;
+  const baseUrl = "https://payseguroltda.shop";
 
   const links = [
     { id: "admin", label: "Painel Admin", path: "/admin", description: "Acesso ao gerenciamento de reservas, gateway e configurações" },
