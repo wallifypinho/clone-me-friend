@@ -356,23 +356,33 @@ const AdminPanel = () => {
                     <CreditCard className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-foreground">AnubisPay</p>
+                    <p className="font-semibold text-sm text-foreground">HuraPay</p>
                     <p className="text-xs text-muted-foreground">Gateway principal • PIX e Cartão de Crédito</p>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Configure suas chaves da AnubisPay para processar pagamentos. Você pode alterar ou remover as chaves a qualquer momento.
+                  Configure suas chaves da HuraPay para processar pagamentos. Você pode alterar ou remover as chaves a qualquer momento.
                 </p>
               </div>
 
               <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">URL da API</label>
+                  <input
+                    type="text"
+                    value={gatewayApiUrl}
+                    onChange={(e) => setGatewayApiUrl(e.target.value)}
+                    placeholder="https://api.hurapay.com.br/v1/transactions"
+                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
                 <div>
                   <label className="text-sm font-medium text-foreground mb-1.5 block">Public Key</label>
                   <input
                     type="text"
                     value={gatewayPublicKey}
                     onChange={(e) => setGatewayPublicKey(e.target.value)}
-                    placeholder="pk_live_..."
+                    placeholder="hurapay_live_..."
                     className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
@@ -412,7 +422,7 @@ const AdminPanel = () => {
               <h4 className="font-semibold text-sm text-foreground mb-2">ℹ️ Como funciona</h4>
               <ul className="text-xs text-muted-foreground space-y-1.5 list-disc list-inside">
                 <li>As chaves são armazenadas de forma segura no banco de dados</li>
-                <li>Ao ativar, os pagamentos via PIX e Cartão serão processados pela AnubisPay</li>
+                <li>Ao ativar, os pagamentos via PIX e Cartão serão processados pela HuraPay</li>
                 <li>Você pode trocar as chaves ou desativar o gateway a qualquer momento</li>
                 <li>Sem gateway ativo, os pedidos serão registrados como "pendente" para confirmação manual</li>
               </ul>
