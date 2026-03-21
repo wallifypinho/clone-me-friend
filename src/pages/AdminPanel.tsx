@@ -84,11 +84,28 @@ const AdminPanel = () => {
   const [newUserPass, setNewUserPass] = useState("");
 
   // Gateway state
+  const [gatewayProvider, setGatewayProvider] = useState<"hurapay" | "anubispay">("hurapay");
   const [gatewayPublicKey, setGatewayPublicKey] = useState("");
   const [gatewaySecretKey, setGatewaySecretKey] = useState("");
-  const [gatewayApiUrl, setGatewayApiUrl] = useState("https://api.hurapay.com.br/v1/transactions");
   const [gatewayActive, setGatewayActive] = useState(false);
   const [gatewayLoading, setGatewayLoading] = useState(false);
+
+  const GATEWAY_CONFIG = {
+    hurapay: {
+      name: "HuraPay",
+      apiUrl: "https://api.hurapay.com.br/v1/transactions",
+      pkPlaceholder: "hurapay_live_...",
+      skPlaceholder: "sk_live_...",
+      description: "Gateway HuraPay • PIX e Cartão de Crédito",
+    },
+    anubispay: {
+      name: "AnubisPay",
+      apiUrl: "https://api.anubispay.com.br/v1/transactions",
+      pkPlaceholder: "pk_...",
+      skPlaceholder: "sk_...",
+      description: "Gateway AnubisPay • PIX e Cartão de Crédito",
+    },
+  };
 
   const checkPassword = async (password: string) => {
     const { data } = await supabase
@@ -114,14 +131,14 @@ const AdminPanel = () => {
     const { data } = await supabase
       .from("admin_settings")
       .select("key, value")
-      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_active", "gateway_api_url"]);
+      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_active", "gateway_provider"]);
 
     if (data) {
       for (const row of data) {
         if (row.key === "gateway_public_key") setGatewayPublicKey(row.value);
         if (row.key === "gateway_secret_key") setGatewaySecretKey(row.value);
         if (row.key === "gateway_active") setGatewayActive(row.value === "true");
-        if (row.key === "gateway_api_url" && row.value) setGatewayApiUrl(row.value);
+        if (row.key === "gateway_provider" && (row.value === "hurapay" || row.value === "anubispay")) setGatewayProvider(row.value);
       }
     }
     setGatewayLoading(false);
@@ -169,13 +186,14 @@ const AdminPanel = () => {
       return;
     }
     setGatewayLoading(true);
+    await upsertSetting("gateway_provider", gatewayProvider);
     await upsertSetting("gateway_public_key", gatewayPublicKey.trim());
     await upsertSetting("gateway_secret_key", gatewaySecretKey.trim());
-    await upsertSetting("gateway_api_url", gatewayApiUrl.trim());
+    await upsertSetting("gateway_api_url", GATEWAY_CONFIG[gatewayProvider].apiUrl);
     await upsertSetting("gateway_active", "true");
     setGatewayActive(true);
     setGatewayLoading(false);
-    toast.success("Gateway salvo e ativado!");
+    toast.success(`Gateway ${GATEWAY_CONFIG[gatewayProvider].name} salvo e ativado!`);
   };
 
   const removeGateway = async () => {
@@ -183,10 +201,11 @@ const AdminPanel = () => {
     await upsertSetting("gateway_public_key", "");
     await upsertSetting("gateway_secret_key", "");
     await upsertSetting("gateway_api_url", "");
+    await upsertSetting("gateway_provider", "");
     await upsertSetting("gateway_active", "false");
     setGatewayPublicKey("");
     setGatewaySecretKey("");
-    setGatewayApiUrl("https://api.hurapay.com.br/v1/transactions");
+    setGatewayProvider("hurapay");
     setGatewayActive(false);
     setGatewayLoading(false);
     toast.success("Chaves do gateway removidas");
@@ -350,39 +369,47 @@ const AdminPanel = () => {
                 </span>
               </div>
 
-              <div className="bg-muted/50 border border-border rounded-lg p-4 mb-5">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <CreditCard className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">HuraPay</p>
-                    <p className="text-xs text-muted-foreground">Gateway principal • PIX e Cartão de Crédito</p>
-                  </div>
+              {/* Gateway Selector */}
+              <div className="mb-5">
+                <label className="text-sm font-medium text-foreground mb-2 block">Escolha o Gateway</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(["hurapay", "anubispay"] as const).map((provider) => (
+                    <button
+                      key={provider}
+                      onClick={() => setGatewayProvider(provider)}
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                        gatewayProvider === provider
+                          ? "border-primary bg-accent/30"
+                          : "border-border bg-card hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                        <CreditCard className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-foreground">{GATEWAY_CONFIG[provider].name}</p>
+                        <p className="text-xs text-muted-foreground">{GATEWAY_CONFIG[provider].description}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
+              </div>
+
+              <div className="bg-muted/50 border border-border rounded-lg p-3 mb-5">
                 <p className="text-xs text-muted-foreground">
-                  Configure suas chaves da HuraPay para processar pagamentos. Você pode alterar ou remover as chaves a qualquer momento.
+                  <span className="font-semibold text-foreground">API:</span>{" "}
+                  <span className="font-mono">{GATEWAY_CONFIG[gatewayProvider].apiUrl}</span>
                 </p>
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">URL da API</label>
-                  <input
-                    type="text"
-                    value={gatewayApiUrl}
-                    onChange={(e) => setGatewayApiUrl(e.target.value)}
-                    placeholder="https://api.hurapay.com.br/v1/transactions"
-                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
                 <div>
                   <label className="text-sm font-medium text-foreground mb-1.5 block">Public Key</label>
                   <input
                     type="text"
                     value={gatewayPublicKey}
                     onChange={(e) => setGatewayPublicKey(e.target.value)}
-                    placeholder="hurapay_live_..."
+                    placeholder={GATEWAY_CONFIG[gatewayProvider].pkPlaceholder}
                     className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
@@ -392,7 +419,7 @@ const AdminPanel = () => {
                     type="password"
                     value={gatewaySecretKey}
                     onChange={(e) => setGatewaySecretKey(e.target.value)}
-                    placeholder="sk_live_..."
+                    placeholder={GATEWAY_CONFIG[gatewayProvider].skPlaceholder}
                     className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
@@ -421,9 +448,11 @@ const AdminPanel = () => {
             <div className="bg-card border border-border rounded-xl p-5">
               <h4 className="font-semibold text-sm text-foreground mb-2">ℹ️ Como funciona</h4>
               <ul className="text-xs text-muted-foreground space-y-1.5 list-disc list-inside">
+                <li>Escolha entre <strong>HuraPay</strong> ou <strong>AnubisPay</strong> como gateway</li>
+                <li>A URL da API é configurada automaticamente ao selecionar o gateway</li>
                 <li>As chaves são armazenadas de forma segura no banco de dados</li>
-                <li>Ao ativar, os pagamentos via PIX e Cartão serão processados pela HuraPay</li>
-                <li>Você pode trocar as chaves ou desativar o gateway a qualquer momento</li>
+                <li>Ao ativar, os pagamentos via PIX e Cartão serão processados pelo gateway selecionado</li>
+                <li>Você pode trocar de gateway, alterar chaves ou desativar a qualquer momento</li>
                 <li>Sem gateway ativo, os pedidos serão registrados como "pendente" para confirmação manual</li>
               </ul>
             </div>
