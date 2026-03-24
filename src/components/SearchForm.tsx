@@ -3,16 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { MapPin, ArrowLeftRight, Calendar, Users, Search } from "lucide-react";
 
 const CITIES = [
-  "São Paulo, SP",
-  "Rio de Janeiro, RJ",
+  "São Paulo, SP - Terminal Rodoviário do Tietê",
+  "São Paulo, SP - Terminal Rodoviário Barra Funda",
+  "São Paulo, SP - Terminal Rodoviário Jabaquara",
+  "Rio de Janeiro, RJ - Rodoviária Novo Rio",
+  "Curitiba, PR - Terminal Rodoviário de Curitiba",
+  "Campinas, SP - Terminal Rodoviário de Campinas",
+  "Salvador, BA - Rodoviária de Salvador",
+  "Brasília, DF - Rodoviária Interestadual de Brasília",
+  "Florianópolis, SC - Terminal Rodoviário Rita Maria",
+  "Porto Alegre, RS - Estação Rodoviária de Porto Alegre",
+  "Goiânia, GO - Terminal Rodoviário de Goiânia",
   "Belo Horizonte, MG",
-  "Curitiba, PR",
-  "Campinas, SP",
-  "Salvador, BA",
-  "Brasília, DF",
-  "Florianópolis, SC",
-  "Porto Alegre, RS",
-  "Goiânia, GO",
 ];
 
 const SearchForm = () => {
