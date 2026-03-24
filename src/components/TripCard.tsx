@@ -12,9 +12,10 @@ const TripCard = ({ trip }: TripCardProps) => {
 
   const handleSelect = () => {
     if (trip.soldOut) return;
+    // Pass full origin/destination from URL params (not truncated trip names)
     const params = new URLSearchParams({
-      origem: trip.origin,
-      destino: trip.destination,
+      origem: searchParams.get("origem") || trip.origin,
+      destino: searchParams.get("destino") || trip.destination,
       data: searchParams.get("data") || "",
       departure: trip.departure,
       arrival: trip.arrival,

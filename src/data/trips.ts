@@ -31,8 +31,15 @@ export const generateTrips = (origin: string, destination: string): Trip[] => {
   const durations = ["5h30", "5h45", "5h30", "5h30", "5h15", "5h45", "5h45", "5h30", "5h45"];
   const prices = [54.08, 58.50, 0, 63.88, 69.78, 92.70, 105.46, 112.84, 120.22];
 
-  const originCity = origin.split(",")[0].trim();
-  const destCity = destination.split(",")[0].trim();
+  // Extract city name with terminal info for display
+  const getDisplayName = (fullName: string) => {
+    // If it contains a terminal name (after " - "), show "City" format
+    const cityPart = fullName.split(",")[0].trim();
+    return cityPart;
+  };
+
+  const originCity = getDisplayName(origin);
+  const destCity = getDisplayName(destination);
 
   return companies.map((c, i) => {
     const dep = departures[i];

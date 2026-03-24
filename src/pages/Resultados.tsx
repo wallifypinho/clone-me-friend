@@ -4,6 +4,25 @@ import { ArrowLeft, MapPin, Calendar, Search, ArrowLeftRight } from "lucide-reac
 import { generateTrips } from "@/data/trips";
 import TripCard from "@/components/TripCard";
 
+const CITIES = [
+  "São Paulo, SP - Terminal Rodoviário do Tietê",
+  "São Paulo, SP - Terminal Rodoviário Barra Funda",
+  "São Paulo, SP - Terminal Rodoviário Jabaquara",
+  "Rio de Janeiro, RJ - Rodoviária Novo Rio",
+  "Curitiba, PR - Terminal Rodoviário de Curitiba",
+  "Campinas, SP - Terminal Rodoviário de Campinas",
+  "Salvador, BA - Rodoviária de Salvador",
+  "Brasília, DF - Rodoviária Interestadual de Brasília",
+  "Florianópolis, SC - Terminal Rodoviário Rita Maria",
+  "Porto Alegre, RS - Estação Rodoviária de Porto Alegre",
+  "Goiânia, GO - Terminal Rodoviário de Goiânia",
+  "Belo Horizonte, MG",
+];
+
+const getCityDisplayName = (fullName: string) => {
+  return fullName.split(",")[0].trim();
+};
+
 const Resultados = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -13,10 +32,12 @@ const Resultados = () => {
   const data = searchParams.get("data") || "";
   const adultos = searchParams.get("adultos") || "1";
 
-  const [origemInput, setOrigemInput] = useState(origem.split(",")[0].trim());
-  const [destinoInput, setDestinoInput] = useState(destino.split(",")[0].trim());
+  const [origemInput, setOrigemInput] = useState(origem);
+  const [destinoInput, setDestinoInput] = useState(destino);
   const [dataInput, setDataInput] = useState(data);
   const [dataVoltaInput, setDataVoltaInput] = useState(searchParams.get("dataVolta") || "");
+  const [showOrigemSuggestions, setShowOrigemSuggestions] = useState(false);
+  const [showDestinoSuggestions, setShowDestinoSuggestions] = useState(false);
 
   // Filters
   const [timeFilters, setTimeFilters] = useState<string[]>([]);
@@ -24,6 +45,13 @@ const Resultados = () => {
   const [sortBy, setSortBy] = useState("price");
 
   const trips = useMemo(() => generateTrips(origem, destino), [origem, destino]);
+
+  const filteredOrigem = CITIES.filter((c) =>
+    c.toLowerCase().includes(origemInput.toLowerCase())
+  );
+  const filteredDestino = CITIES.filter((c) =>
+    c.toLowerCase().includes(destinoInput.toLowerCase())
+  );
 
   const filteredTrips = useMemo(() => {
     let result = [...trips];
@@ -65,6 +93,7 @@ const Resultados = () => {
   };
 
   const handleNewSearch = () => {
+    if (!origemInput || !destinoInput || !dataInput) return;
     const params = new URLSearchParams({
       origem: origemInput,
       destino: destinoInput,
@@ -89,8 +118,8 @@ const Resultados = () => {
     navigate(`/resultados?${params.toString()}`);
   };
 
-  const originCity = origem.split(",")[0].trim();
-  const destCity = destino.split(",")[0].trim();
+  const originCity = getCityDisplayName(origem);
+  const destCity = getCityDisplayName(destino);
 
   return (
     <div className="min-h-screen bg-muted">
@@ -107,22 +136,64 @@ const Resultados = () => {
           </Link>
 
           <div className="flex-1 flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 border border-border rounded-lg px-3 py-1.5 text-sm bg-background">
-              <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-              <input
-                value={origemInput}
-                onChange={(e) => setOrigemInput(e.target.value)}
-                className="bg-transparent outline-none w-28"
-              />
+            {/* Origem with autocomplete */}
+            <div className="relative">
+              <div className="flex items-center gap-1.5 border border-border rounded-lg px-3 py-1.5 text-sm bg-background">
+                <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                  value={origemInput}
+                  onChange={(e) => { setOrigemInput(e.target.value); setShowOrigemSuggestions(true); }}
+                  onFocus={() => setShowOrigemSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowOrigemSuggestions(false), 200)}
+                  className="bg-transparent outline-none w-44"
+                  placeholder="Origem"
+                />
+              </div>
+              {showOrigemSuggestions && origemInput && filteredOrigem.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-card border border-border rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto min-w-[280px]">
+                  {filteredOrigem.map((city) => (
+                    <button
+                      key={city}
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
+                      onMouseDown={() => { setOrigemInput(city); setShowOrigemSuggestions(false); }}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-1.5 border border-border rounded-lg px-3 py-1.5 text-sm bg-background">
-              <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-              <input
-                value={destinoInput}
-                onChange={(e) => setDestinoInput(e.target.value)}
-                className="bg-transparent outline-none w-28"
-              />
+
+            {/* Destino with autocomplete */}
+            <div className="relative">
+              <div className="flex items-center gap-1.5 border border-border rounded-lg px-3 py-1.5 text-sm bg-background">
+                <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                  value={destinoInput}
+                  onChange={(e) => { setDestinoInput(e.target.value); setShowDestinoSuggestions(true); }}
+                  onFocus={() => setShowDestinoSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowDestinoSuggestions(false), 200)}
+                  className="bg-transparent outline-none w-44"
+                  placeholder="Destino"
+                />
+              </div>
+              {showDestinoSuggestions && destinoInput && filteredDestino.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-card border border-border rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto min-w-[280px]">
+                  {filteredDestino.map((city) => (
+                    <button
+                      key={city}
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
+                      onMouseDown={() => { setDestinoInput(city); setShowDestinoSuggestions(false); }}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
             <div className="flex items-center gap-1.5 border border-border rounded-lg px-3 py-1.5 text-sm bg-background">
               <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
               <input
