@@ -4,6 +4,21 @@ import { ArrowLeft, MapPin, Calendar, Search, ArrowLeftRight } from "lucide-reac
 import { generateTrips } from "@/data/trips";
 import TripCard from "@/components/TripCard";
 
+const CITIES = [
+  "São Paulo, SP - Terminal Rodoviário do Tietê",
+  "São Paulo, SP - Terminal Rodoviário Barra Funda",
+  "São Paulo, SP - Terminal Rodoviário Jabaquara",
+  "Rio de Janeiro, RJ - Rodoviária Novo Rio",
+  "Curitiba, PR - Terminal Rodoviário de Curitiba",
+  "Campinas, SP - Terminal Rodoviário de Campinas",
+  "Salvador, BA - Rodoviária de Salvador",
+  "Brasília, DF - Rodoviária Interestadual de Brasília",
+  "Florianópolis, SC - Terminal Rodoviário Rita Maria",
+  "Porto Alegre, RS - Estação Rodoviária de Porto Alegre",
+  "Goiânia, GO - Terminal Rodoviário de Goiânia",
+  "Belo Horizonte, MG",
+];
+
 const Resultados = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
