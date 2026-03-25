@@ -155,30 +155,69 @@ Deno.serve(async (req) => {
     }
 
     // Parse HuraPay response
-    // Response format: { Id, Status, Amount, PaymentMethod, ... }
-    // For PIX: may contain pix_code/qr_code in nested object or at root
-    const txId = gatewayData?.Id || gatewayData?.id || gatewayData?.data?.Id || gatewayData?.data?.id;
-    const txStatus = gatewayData?.Status || gatewayData?.status || "PENDING";
+    const responseData = gatewayData?.data || gatewayData;
+    const pixData = responseData?.pix || responseData?.Pix || gatewayData?.pix || gatewayData?.Pix || {};
 
-    // Try to extract PIX data from various possible response structures
-    const pixData = gatewayData?.pix || gatewayData?.Pix || {};
-    const pixCode = pixData?.qr_code || pixData?.QrCode || pixData?.code || 
-                    gatewayData?.pix_code || gatewayData?.PixCode || 
-                    gatewayData?.qr_code || gatewayData?.QrCode || "";
-    const pixUrl = pixData?.url || pixData?.Url || gatewayData?.pix_url || "";
+    const txId = responseData?.Id || responseData?.id || gatewayData?.Id || gatewayData?.id;
+    const txStatus = responseData?.Status || responseData?.status || gatewayData?.Status || gatewayData?.status || "PENDING";
+
+    const pixCode =
+      pixData?.qr_code ||
+      pixData?.QrCode ||
+      pixData?.copy_paste ||
+      pixData?.copyAndPaste ||
+      pixData?.emv ||
+      pixData?.code ||
+      responseData?.pix_code ||
+      responseData?.PixCode ||
+      responseData?.qr_code ||
+      responseData?.QrCode ||
+      gatewayData?.pix_code ||
+      gatewayData?.PixCode ||
+      gatewayData?.qr_code ||
+      gatewayData?.QrCode ||
+      "";
+
+    const qrCodeUrl =
+      pixData?.qr_code_url ||
+      pixData?.QrCodeUrl ||
+      pixData?.url ||
+      pixData?.Url ||
+      responseData?.qr_code_url ||
+      responseData?.QrCodeUrl ||
+      gatewayData?.qr_code_url ||
+      gatewayData?.QrCodeUrl ||
+      "";
+
+    const qrCodeBase64 =
+      pixData?.qr_code_base64 ||
+      pixData?.QrCodeBase64 ||
+      responseData?.qr_code_base64 ||
+      responseData?.QrCodeBase64 ||
+      gatewayData?.qr_code_base64 ||
+      gatewayData?.QrCodeBase64 ||
+      "";
+
+    const expiresAt =
+      pixData?.expires_at ||
+      pixData?.ExpiresAt ||
+      responseData?.ExpiresAt ||
+      responseData?.expires_at ||
+      gatewayData?.ExpiresAt ||
+      gatewayData?.expires_at ||
+      new Date(Date.now() + 86400 * 1000).toISOString();
 
     const result = {
       success: true,
       transaction_id: txId,
       status: txStatus,
       pix_code: pixCode,
-      qr_code_url: pixUrl,
-      qr_code_base64: "",
+      qr_code_url: qrCodeUrl,
+      qr_code_base64: qrCodeBase64,
       amount,
       auth_strategy: lastStrategy,
-      expires_at: gatewayData?.ExpiresAt || gatewayData?.expires_at || 
-                  new Date(Date.now() + 86400 * 1000).toISOString(),
-      raw_response: gatewayData, // Include full response for debugging
+      expires_at: expiresAt,
+      raw_response: gatewayData,
     };
 
     // Update booking status
