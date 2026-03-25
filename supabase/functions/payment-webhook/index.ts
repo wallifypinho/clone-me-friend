@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
         .eq("code", order.reservation_code);
     }
 
-    // If payment confirmed, update orders_attribution and log conversion event
+    // If payment confirmed, update all related entities
     if (normalizedStatus === "paid") {
       console.log(`[webhook] Payment confirmed for order ${order.order_id}, reservation ${order.reservation_code}`);
 
@@ -178,6 +178,26 @@ Deno.serve(async (req) => {
           gateway_transaction_id: gatewayTxId,
         })
         .eq("reservation_code", order.reservation_code);
+
+      // Update reservation status to "paid"
+      if (order.reservation_code) {
+        await supabase
+          .from("reservations")
+          .update({ reservation_status: "paid", updated_at: new Date().toISOString() })
+          .eq("reservation_code", order.reservation_code);
+      }
+
+      // Create ticket record (pending issuance)
+      const ticketId = `tkt_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
+      await supabase.from("tickets").insert({
+        ticket_id: ticketId,
+        reservation_code: order.reservation_code,
+        order_id: order.order_id,
+        passenger_name: order.customer_name || null,
+        passenger_cpf: order.customer_cpf || null,
+        status: "issued",
+        issued_at: new Date().toISOString(),
+      });
 
       // Register PurchaseConfirmed conversion event in visitor_events
       const conversionEventId = `conv_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
@@ -208,6 +228,7 @@ Deno.serve(async (req) => {
           ad_name: order.ad_name,
           ad_id: order.ad_id,
           placement: order.placement,
+          ticket_id: ticketId,
           confirmed_via: "webhook",
         },
         buyer_score: order.buyer_score || 0,

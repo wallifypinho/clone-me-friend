@@ -110,6 +110,48 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          cpf: string | null
+          created_at: string
+          email: string | null
+          id: string
+          lead_id: string
+          name: string | null
+          phone: string | null
+          session_id: string | null
+          updated_at: string
+          visitor_id: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lead_id: string
+          name?: string | null
+          phone?: string | null
+          session_id?: string | null
+          updated_at?: string
+          visitor_id?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lead_id?: string
+          name?: string | null
+          phone?: string | null
+          session_id?: string | null
+          updated_at?: string
+          visitor_id?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           ad_id: string | null
@@ -371,6 +413,134 @@ export type Database = {
         }
         Relationships: []
       }
+      reservations: {
+        Row: {
+          arrival_time: string | null
+          base_amount: number
+          company: string | null
+          created_at: string
+          departure_date: string
+          departure_time: string | null
+          destination: string
+          id: string
+          lead_id: string | null
+          origin: string
+          passenger_count: number
+          reservation_code: string
+          reservation_status: string
+          return_date: string | null
+          seat_type: string | null
+          seats: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          arrival_time?: string | null
+          base_amount?: number
+          company?: string | null
+          created_at?: string
+          departure_date: string
+          departure_time?: string | null
+          destination: string
+          id?: string
+          lead_id?: string | null
+          origin: string
+          passenger_count?: number
+          reservation_code: string
+          reservation_status?: string
+          return_date?: string | null
+          seat_type?: string | null
+          seats?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          arrival_time?: string | null
+          base_amount?: number
+          company?: string | null
+          created_at?: string
+          departure_date?: string
+          departure_time?: string | null
+          destination?: string
+          id?: string
+          lead_id?: string | null
+          origin?: string
+          passenger_count?: number
+          reservation_code?: string
+          reservation_status?: string
+          return_date?: string | null
+          seat_type?: string | null
+          seats?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["lead_id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          airline_locator: string | null
+          created_at: string
+          departure_date: string | null
+          departure_time: string | null
+          destination: string | null
+          id: string
+          issued_at: string | null
+          order_id: string | null
+          origin: string | null
+          passenger_cpf: string | null
+          passenger_name: string | null
+          pdf_url: string | null
+          reservation_code: string | null
+          seat: string | null
+          status: string
+          ticket_id: string
+        }
+        Insert: {
+          airline_locator?: string | null
+          created_at?: string
+          departure_date?: string | null
+          departure_time?: string | null
+          destination?: string | null
+          id?: string
+          issued_at?: string | null
+          order_id?: string | null
+          origin?: string | null
+          passenger_cpf?: string | null
+          passenger_name?: string | null
+          pdf_url?: string | null
+          reservation_code?: string | null
+          seat?: string | null
+          status?: string
+          ticket_id: string
+        }
+        Update: {
+          airline_locator?: string | null
+          created_at?: string
+          departure_date?: string | null
+          departure_time?: string | null
+          destination?: string | null
+          id?: string
+          issued_at?: string | null
+          order_id?: string | null
+          origin?: string | null
+          passenger_cpf?: string | null
+          passenger_name?: string | null
+          pdf_url?: string | null
+          reservation_code?: string | null
+          seat?: string | null
+          status?: string
+          ticket_id?: string
+        }
+        Relationships: []
+      }
       visitor_events: {
         Row: {
           buyer_score: number | null
@@ -423,6 +593,7 @@ export type Database = {
           adset_id: string | null
           adset_name: string | null
           browser: string | null
+          buyer_score: number | null
           campaign_id: string | null
           campaign_name: string | null
           created_at: string
@@ -452,6 +623,7 @@ export type Database = {
           adset_id?: string | null
           adset_name?: string | null
           browser?: string | null
+          buyer_score?: number | null
           campaign_id?: string | null
           campaign_name?: string | null
           created_at?: string
@@ -481,6 +653,7 @@ export type Database = {
           adset_id?: string | null
           adset_name?: string | null
           browser?: string | null
+          buyer_score?: number | null
           campaign_id?: string | null
           campaign_name?: string | null
           created_at?: string
