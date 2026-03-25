@@ -252,6 +252,60 @@ Deno.serve(async (req) => {
       if (error) console.error("[create-payment] Error saving order:", error);
     });
 
+    // Send order creation to UTMify (status: waiting_payment)
+    const utmifyToken = Deno.env.get("UTMIFY_API_TOKEN");
+    if (utmifyToken) {
+      try {
+        const utmifyPayload = {
+          isTest: false,
+          orderId: orderId,
+          status: "waiting_payment",
+          value: amount,
+          currency: "BRL",
+          paymentMethod: paymentMethod || "pix",
+          createdAt: new Date().toISOString(),
+          approvedDate: null,
+          customer: {
+            name: customerName || "",
+            email: customerEmail || "",
+            phone: customerPhone || "",
+            document: (customerCpf || "").replace(/\D/g, ""),
+          },
+          trackingParameters: {
+            src: attr.utm_source || null,
+            sck: attr.fbclid || null,
+            utm_source: attr.utm_source || null,
+            utm_medium: attr.utm_medium || null,
+            utm_campaign: attr.utm_campaign || null,
+            utm_content: attr.utm_content || null,
+            utm_term: attr.utm_term || null,
+          },
+          product: {
+            name: `Passagem ${bookingCode}`,
+            id: bookingCode,
+            price: amount,
+            quantity: 1,
+          },
+        };
+
+        const utmifyRes = await fetch(
+          "https://api.utmify.com.br/api-credentials/orders",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-token": utmifyToken,
+            },
+            body: JSON.stringify(utmifyPayload),
+          }
+        );
+        const utmifyResult = await utmifyRes.text();
+        console.log("[create-payment] UTMify order created:", utmifyResult.substring(0, 300));
+      } catch (utmifyErr) {
+        console.error("[create-payment] UTMify error:", utmifyErr);
+      }
+    }
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
