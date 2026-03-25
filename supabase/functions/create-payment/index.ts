@@ -17,7 +17,11 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
-    const { amount, bookingCode, customerName, customerCpf, customerEmail, customerPhone, paymentMethod } = body;
+    const {
+      amount, bookingCode, customerName, customerCpf, customerEmail, customerPhone, paymentMethod,
+      // Attribution data from frontend
+      attribution,
+    } = body;
 
     if (!amount || !bookingCode || !paymentMethod) {
       return new Response(
@@ -42,6 +46,9 @@ Deno.serve(async (req) => {
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Generate internal order_id
+    const orderId = `ord_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
 
     // HuraPay API - amount is in centavos (cents)
     const amountInCents = Math.round(amount * 100);
@@ -68,7 +75,12 @@ Deno.serve(async (req) => {
           tangible: false,
         },
       ],
-      metadata: { booking_code: bookingCode },
+      metadata: {
+        booking_code: bookingCode,
+        order_id: orderId,
+        session_id: attribution?.session_id || "",
+        lead_id: attribution?.lead_id || "",
+      },
     };
 
     // Add PIX config if applicable
@@ -77,8 +89,8 @@ Deno.serve(async (req) => {
     }
 
     // If the URL already contains the full path, use it directly; otherwise append the path
-    const endpoint = gatewayUrl.includes("/payment-transaction/create") 
-      ? gatewayUrl 
+    const endpoint = gatewayUrl.includes("/payment-transaction/create")
+      ? gatewayUrl
       : `${gatewayUrl.replace(/\/+$/, "")}/v1/payment-transaction/create`;
 
     // Try multiple auth strategies
@@ -95,7 +107,7 @@ Deno.serve(async (req) => {
 
     for (const strategy of authStrategies) {
       console.log(`Trying auth: ${strategy.name}`);
-      
+
       try {
         lastResponse = await fetch(endpoint, {
           method: "POST",
@@ -112,7 +124,6 @@ Deno.serve(async (req) => {
 
         console.log(`${strategy.name} => status ${lastResponse.status}: ${lastResponseText.substring(0, 300)}`);
 
-        // If not 401/403, we found the right auth (even if other error)
         if (lastResponse.status !== 401 && lastResponse.status !== 403) {
           break;
         }
@@ -162,49 +173,23 @@ Deno.serve(async (req) => {
     const txStatus = responseData?.Status || responseData?.status || gatewayData?.Status || gatewayData?.status || "PENDING";
 
     const pixCode =
-      pixData?.qr_code ||
-      pixData?.QrCode ||
-      pixData?.copy_paste ||
-      pixData?.copyAndPaste ||
-      pixData?.emv ||
-      pixData?.code ||
-      responseData?.pix_code ||
-      responseData?.PixCode ||
-      responseData?.qr_code ||
-      responseData?.QrCode ||
-      gatewayData?.pix_code ||
-      gatewayData?.PixCode ||
-      gatewayData?.qr_code ||
-      gatewayData?.QrCode ||
-      "";
+      pixData?.qr_code || pixData?.QrCode || pixData?.copy_paste || pixData?.copyAndPaste ||
+      pixData?.emv || pixData?.code || responseData?.pix_code || responseData?.PixCode ||
+      responseData?.qr_code || responseData?.QrCode || gatewayData?.pix_code || gatewayData?.PixCode ||
+      gatewayData?.qr_code || gatewayData?.QrCode || "";
 
     const qrCodeUrl =
-      pixData?.qr_code_url ||
-      pixData?.QrCodeUrl ||
-      pixData?.url ||
-      pixData?.Url ||
-      responseData?.qr_code_url ||
-      responseData?.QrCodeUrl ||
-      gatewayData?.qr_code_url ||
-      gatewayData?.QrCodeUrl ||
-      "";
+      pixData?.qr_code_url || pixData?.QrCodeUrl || pixData?.url || pixData?.Url ||
+      responseData?.qr_code_url || responseData?.QrCodeUrl || gatewayData?.qr_code_url || gatewayData?.QrCodeUrl || "";
 
     const qrCodeBase64 =
-      pixData?.qr_code_base64 ||
-      pixData?.QrCodeBase64 ||
-      responseData?.qr_code_base64 ||
-      responseData?.QrCodeBase64 ||
-      gatewayData?.qr_code_base64 ||
-      gatewayData?.QrCodeBase64 ||
-      "";
+      pixData?.qr_code_base64 || pixData?.QrCodeBase64 || responseData?.qr_code_base64 ||
+      responseData?.QrCodeBase64 || gatewayData?.qr_code_base64 || gatewayData?.QrCodeBase64 || "";
 
     const expiresAt =
-      pixData?.expires_at ||
-      pixData?.ExpiresAt ||
-      responseData?.ExpiresAt ||
-      responseData?.expires_at ||
-      gatewayData?.ExpiresAt ||
-      gatewayData?.expires_at ||
+      pixData?.expires_at || pixData?.ExpiresAt || pixData?.expiration_date ||
+      responseData?.ExpiresAt || responseData?.expires_at ||
+      gatewayData?.ExpiresAt || gatewayData?.expires_at ||
       new Date(Date.now() + 86400 * 1000).toISOString();
 
     const result = {
@@ -217,14 +202,55 @@ Deno.serve(async (req) => {
       amount,
       auth_strategy: lastStrategy,
       expires_at: expiresAt,
+      order_id: orderId,
       raw_response: gatewayData,
     };
 
     // Update booking status
     await supabase
       .from("bookings")
-      .update({ status: "awaiting_payment", payment_method: paymentMethod })
+      .update({ status: "awaiting_payment", payment_method: paymentMethod, gateway_transaction_id: txId })
       .eq("code", bookingCode);
+
+    // Save order record with full attribution
+    const attr = attribution || {};
+    await supabase.from("orders").insert({
+      order_id: orderId,
+      reservation_code: bookingCode,
+      lead_id: attr.lead_id || null,
+      session_id: attr.session_id || null,
+      visitor_id: attr.visitor_id || null,
+      gateway_transaction_id: txId,
+      amount,
+      currency: "BRL",
+      payment_method: paymentMethod,
+      payment_status: "pending",
+      customer_name: customerName || null,
+      customer_cpf: customerCpf || null,
+      customer_email: customerEmail || null,
+      customer_whatsapp: attr.customer_whatsapp || null,
+      utm_source: attr.utm_source || null,
+      utm_medium: attr.utm_medium || null,
+      utm_campaign: attr.utm_campaign || null,
+      utm_content: attr.utm_content || null,
+      utm_term: attr.utm_term || null,
+      fbclid: attr.fbclid || null,
+      gclid: attr.gclid || null,
+      campaign_name: attr.campaign_name || null,
+      campaign_id: attr.campaign_id || null,
+      adset_name: attr.adset_name || null,
+      adset_id: attr.adset_id || null,
+      ad_name: attr.ad_name || null,
+      ad_id: attr.ad_id || null,
+      placement: attr.placement || null,
+      first_visit_at: attr.first_visit_at || null,
+      landing_page: attr.landing_page || null,
+      referrer: attr.referrer || null,
+      buyer_score: attr.buyer_score || 0,
+      raw_gateway_response: gatewayData,
+    }).then(({ error }) => {
+      if (error) console.error("[create-payment] Error saving order:", error);
+    });
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
