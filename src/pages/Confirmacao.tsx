@@ -27,6 +27,7 @@ const Confirmacao = () => {
   const bookingCode = searchParams.get("bookingCode") || "";
   const expiresAt = searchParams.get("expiresAt") || "";
   const transactionId = searchParams.get("transactionId") || "";
+  const orderId = searchParams.get("orderId") || "";
 
   const seatList = seats.split(",");
   const total = price * seatList.length;
@@ -98,14 +99,33 @@ const Confirmacao = () => {
           setPaymentConfirmed(true);
           clearInterval(pollInterval);
 
-          // Fire Purchase event — this is what UTMify and Facebook Pixel capture
-          analytics.trackEvent('Purchase', {
+          const attrData = analytics.getAttributionData();
+          const paidPayload = {
             value: total,
             currency: 'BRL',
             content_name: `${origem} → ${destino}`,
             reservation_code: code,
+            order_id: orderId || transactionId,
             transaction_id: transactionId,
-          });
+            gateway_transaction_id: transactionId,
+            session_id: analytics.getSessionId(),
+            lead_id: analytics.getLeadData()?.lead_id || null,
+            paid_at: orderData.paid_at || new Date().toISOString(),
+            payment_status: 'paid',
+            utm_source: attrData?.utm_source || null,
+            utm_medium: attrData?.utm_medium || null,
+            utm_campaign: attrData?.utm_campaign || null,
+            utm_content: attrData?.utm_content || null,
+            utm_term: attrData?.utm_term || null,
+            fbclid: attrData?.fbclid || null,
+            campaign_name: attrData?.campaign_name || null,
+            campaign_id: attrData?.campaign_id || null,
+          };
+
+          // Purchase = conversão real para UTMify/Pixel
+          analytics.trackEvent('Purchase', paidPayload);
+          // OrderPaid = evento interno de análise
+          analytics.trackEvent('OrderPaid', paidPayload);
           analytics.updateScore('PURCHASE_COMPLETED');
 
           toast.success("Pagamento confirmado!");
