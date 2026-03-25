@@ -74,31 +74,64 @@ Deno.serve(async (req) => {
       bookingCode,
     }));
 
-    const authVariants = [
-      { label: "public_secret", value: toBase64(`${publicKey}:${secretKey}`) },
-      { label: "secret_public", value: toBase64(`${secretKey}:${publicKey}`) },
+    // Try multiple authentication strategies common in Brazilian payment gateways
+    const authStrategies = [
+      {
+        label: "bearer_secret",
+        headers: { "authorization": `Bearer ${secretKey}` },
+      },
+      {
+        label: "bearer_public",
+        headers: { "authorization": `Bearer ${publicKey}` },
+      },
+      {
+        label: "custom_headers",
+        headers: {
+          "x-public-key": publicKey,
+          "x-secret-key": secretKey,
+        },
+      },
+      {
+        label: "api_key_header",
+        headers: { "x-api-key": secretKey },
+      },
+      {
+        label: "basic_public_secret",
+        headers: { "authorization": `Basic ${toBase64(`${publicKey}:${secretKey}`)}` },
+      },
+      {
+        label: "basic_secret_public",
+        headers: { "authorization": `Basic ${toBase64(`${secretKey}:${publicKey}`)}` },
+      },
     ];
 
     let gatewayResponse: Response | null = null;
     let responseText = "";
+    let successLabel = "";
 
-    for (const authVariant of authVariants) {
-      gatewayResponse = await fetch(gatewayUrl, {
-        method: "POST",
-        headers: {
-          "accept": "application/json",
-          "content-type": "application/json",
-          "authorization": `Basic ${authVariant.value}`,
-        },
-        body: JSON.stringify(gatewayPayload),
-      });
+    for (const strategy of authStrategies) {
+      try {
+        gatewayResponse = await fetch(gatewayUrl, {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "content-type": "application/json",
+            ...strategy.headers,
+          },
+          body: JSON.stringify(gatewayPayload),
+        });
 
-      responseText = await gatewayResponse.text();
-      console.log("Gateway response status:", gatewayResponse.status, "auth_variant:", authVariant.label);
-      console.log("Gateway response body:", responseText);
+        responseText = await gatewayResponse.text();
+        console.log(`Auth strategy [${strategy.label}] → status: ${gatewayResponse.status}`);
+        console.log(`Response body: ${responseText.substring(0, 500)}`);
 
-      if (gatewayResponse.ok || gatewayResponse.status !== 401) {
-        break;
+        // If we got anything other than 401/403, this auth worked (or it's a different error)
+        if (gatewayResponse.status !== 401 && gatewayResponse.status !== 403) {
+          successLabel = strategy.label;
+          break;
+        }
+      } catch (fetchErr) {
+        console.error(`Auth strategy [${strategy.label}] fetch error:`, fetchErr);
       }
     }
 
@@ -106,35 +139,39 @@ Deno.serve(async (req) => {
     try {
       gatewayData = JSON.parse(responseText);
     } catch {
-      console.error("Failed to parse gateway response as JSON");
+      console.error("Failed to parse gateway response as JSON:", responseText.substring(0, 200));
       return new Response(
-        JSON.stringify({ error: "Resposta inválida do gateway de pagamento", details: responseText }),
+        JSON.stringify({ error: "Resposta inválida do gateway de pagamento", details: responseText.substring(0, 500) }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!gatewayResponse?.ok) {
+      const isAuthError = gatewayResponse?.status === 401 || gatewayResponse?.status === 403;
       console.error("Gateway error:", gatewayResponse?.status, gatewayData);
       return new Response(
-        JSON.stringify({ 
-          error: gatewayResponse?.status === 401
-            ? "Falha de autenticação no gateway. Verifique as chaves cadastradas no painel admin."
-            : "Erro no gateway de pagamento",
+        JSON.stringify({
+          error: isAuthError
+            ? "Falha de autenticação no gateway. Verifique as chaves cadastradas no painel admin. Todas as estratégias de autenticação falharam."
+            : `Erro no gateway de pagamento (${gatewayResponse?.status})`,
           status: gatewayResponse?.status,
-          details: gatewayData 
+          details: gatewayData,
+          tried_strategies: authStrategies.map(s => s.label),
         }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`Gateway success with auth strategy: ${successLabel}`);
 
     const pixData = gatewayData.pix || {};
     const result = {
       success: true,
       transaction_id: gatewayData.id || gatewayData.transactionId,
       status: gatewayData.status || "pending",
-      pix_code: pixData.qrcode || pixData.qrCode || pixData.brCode || gatewayData.brCode || "",
-      qr_code_base64: "",
-      qr_code_url: "",
+      pix_code: pixData.qrcode || pixData.qrCode || pixData.brCode || gatewayData.brCode || gatewayData.pixCode || "",
+      qr_code_base64: pixData.qrCodeBase64 || gatewayData.qrCodeBase64 || "",
+      qr_code_url: pixData.qrCodeUrl || gatewayData.qrCodeUrl || "",
       amount,
       expires_at: pixData.expirationDate || gatewayData.expiresAt || new Date(Date.now() + 3600 * 1000).toISOString(),
       raw: gatewayData,
