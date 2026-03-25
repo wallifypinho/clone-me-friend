@@ -239,6 +239,28 @@ Deno.serve(async (req) => {
       const metaToken = Deno.env.get("META_CAPI_TOKEN");
       if (metaToken) {
         try {
+          // Hash PII with SHA-256 as required by Meta CAPI
+          async function sha256(value: string): Promise<string> {
+            const data = new TextEncoder().encode(value.trim().toLowerCase());
+            const hash = await crypto.subtle.digest("SHA-256", data);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+          }
+
+          const userData: Record<string, any> = {};
+          if (order.customer_email) userData.em = [await sha256(order.customer_email)];
+          if (order.customer_whatsapp) {
+            const phone = order.customer_whatsapp.replace(/\D/g, "");
+            userData.ph = [await sha256(phone.startsWith("55") ? phone : `55${phone}`)];
+          }
+          if (order.customer_name) {
+            const names = order.customer_name.trim().split(/\s+/);
+            userData.fn = [await sha256(names[0])];
+            if (names.length > 1) userData.ln = [await sha256(names[names.length - 1])];
+          }
+          if (order.fbclid) userData.fbc = `fb.1.${Date.now()}.${order.fbclid}`;
+          userData.client_ip_address = "0.0.0.0";
+          userData.client_user_agent = "server";
+
           const capiPayload = {
             data: [
               {
@@ -246,12 +268,7 @@ Deno.serve(async (req) => {
                 event_time: Math.floor(Date.now() / 1000),
                 event_id: conversionEventId,
                 action_source: "website",
-                user_data: {
-                  em: order.customer_email ? [order.customer_email] : undefined,
-                  ph: order.customer_whatsapp ? [order.customer_whatsapp] : undefined,
-                  fn: order.customer_name ? [order.customer_name] : undefined,
-                  fbc: order.fbclid ? `fb.1.${Date.now()}.${order.fbclid}` : undefined,
-                },
+                user_data: userData,
                 custom_data: {
                   value: order.amount,
                   currency: order.currency || "BRL",
