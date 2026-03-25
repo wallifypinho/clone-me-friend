@@ -20,6 +20,15 @@ const STANDARD_FB_EVENTS = new Set([
   'InitiateCheckout', 'AddPaymentInfo', 'Purchase',
 ]);
 
+// Custom events that should be sent to Meta pixel as trackCustom (for audiences/analysis)
+const META_CUSTOM_EVENTS = new Set([
+  'PixViewed', 'PixCopied', 'ReservationViewed',
+  'PaymentScreenViewed', 'CheckoutAbandoned', 'CheckoutResumed',
+]);
+
+// Internal-only events: saved to DB but NOT sent to Meta pixel
+// (OrderCreated, ReservationCreated, PaymentLinkGenerated, OrderPaid, etc.)
+
 // Critical events to queue for server-side CAPI
 const CAPI_EVENTS = new Set([
   'Purchase', 'Lead', 'InitiateCheckout', 'AddPaymentInfo',
@@ -93,18 +102,22 @@ export const analytics = {
 
     const eventId = generateEventId();
     const isStandard = STANDARD_FB_EVENTS.has(eventName);
+    const isMetaCustom = META_CUSTOM_EVENTS.has(eventName);
 
     // Auto-enrich with journey chain — explicit params override auto values
     const chain = getJourneyChain();
     const enriched = { ...chain, ...params, event_id: eventId };
 
-    // Fire pixel
-    sendToMetaPixel(eventName, enriched, isStandard);
+    // Fire pixel ONLY for standard events and approved custom events
+    // Internal events (OrderCreated, ReservationCreated, etc.) are DB-only
+    if (isStandard || isMetaCustom) {
+      sendToMetaPixel(eventName, enriched, isStandard);
+    }
 
-    // Save to internal DB (fire and forget)
+    // Save to internal DB (fire and forget) — all events
     saveEventToDb(eventName, eventId, enriched);
 
-    // Queue for CAPI if critical
+    // Queue for CAPI if critical (standard conversion events only)
     if (CAPI_EVENTS.has(eventName)) {
       const leadData = this.getLeadData();
       queueServerEvent(eventName, eventId, leadData, enriched);

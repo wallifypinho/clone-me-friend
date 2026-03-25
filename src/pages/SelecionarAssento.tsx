@@ -55,11 +55,12 @@ const SelecionarAssento = () => {
   const total = price * selectedSeats.length;
 
   useEffect(() => {
-    analytics.trackEvent('OfferViewed', { origin: origem, destination: destino, company, price, seat_type: seatType });
+    analytics.trackEvent('ViewContent', { content_type: 'seat_selection', origin: origem, destination: destino, company, value: price, currency: 'BRL' });
   }, []);
 
   const handleConfirm = () => {
-    analytics.trackEvent('InitiateCheckout', {
+    // Internal event only — InitiateCheckout fires on Pagamento page
+    analytics.trackEvent('SeatConfirmed', {
       origin: origem, destination: destino, company, amount: total,
       currency: 'BRL', seats: selectedSeats.join(','), passenger_count: adultos,
     });

@@ -55,13 +55,7 @@ const Confirmacao = () => {
     }
     analytics.trackEvent('ReservationViewed', { reservation_code: code, origin: origem, destination: destino, amount: total });
 
-    // Track Lead event for UTMify — fires immediately so UTMify captures the lead
-    analytics.trackEvent('Lead', {
-      value: total,
-      currency: 'BRL',
-      content_name: `${origem} → ${destino}`,
-      reservation_code: code,
-    });
+    // Lead event removed here — already fired in DadosPassageiro to avoid duplicate
 
     // Update booking with gateway_transaction_id (booking was created in Pagamento)
     if (transactionId) {

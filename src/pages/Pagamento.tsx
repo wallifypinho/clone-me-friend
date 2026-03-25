@@ -25,13 +25,13 @@ const Pagamento = () => {
   useEffect(() => {
     analytics.trackEvent('PaymentScreenViewed', { origin: origem, destination: destino, amount: total, currency: 'BRL' });
     analytics.trackEvent('InitiateCheckout', { value: total, currency: 'BRL', content_name: `${origem} → ${destino}` });
-    analytics.trackEvent('AddPaymentInfo', { value: total, currency: 'BRL' });
     analytics.updateScore('PAYMENT_SCREEN_VIEWED');
   }, []);
 
   const handleContinue = async () => {
     if (!method) return;
     setLoading(true);
+    analytics.trackEvent('AddPaymentInfo', { value: total, currency: 'BRL', payment_type: method });
     analytics.trackEvent('PaymentLinkGenerated', { payment_type: method, amount: total, currency: 'BRL' });
     analytics.updateScore('PAYMENT_LINK_GENERATED');
 
