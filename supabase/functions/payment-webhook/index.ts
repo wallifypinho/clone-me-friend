@@ -239,7 +239,6 @@ Deno.serve(async (req) => {
       const metaToken = Deno.env.get("META_CAPI_TOKEN");
       if (metaToken) {
         try {
-          // Hash PII with SHA-256 as required by Meta CAPI
           async function sha256(value: string): Promise<string> {
             const data = new TextEncoder().encode(value.trim().toLowerCase());
             const hash = await crypto.subtle.digest("SHA-256", data);
@@ -291,6 +290,60 @@ Deno.serve(async (req) => {
           console.log("[webhook] CAPI Purchase sent:", capiResult.substring(0, 300));
         } catch (capiErr) {
           console.error("[webhook] CAPI error:", capiErr);
+        }
+      }
+
+      // Send conversion data to UTMify via API Credentials
+      const utmifyToken = Deno.env.get("UTMIFY_API_TOKEN");
+      if (utmifyToken) {
+        try {
+          const utmifyPayload = {
+            isTest: false,
+            orderId: order.order_id,
+            status: "paid",
+            value: order.amount,
+            currency: order.currency || "BRL",
+            paymentMethod: order.payment_method || "pix",
+            createdAt: order.created_at,
+            approvedDate: orderUpdate.paid_at,
+            customer: {
+              name: order.customer_name || "",
+              email: order.customer_email || "",
+              phone: order.customer_whatsapp || "",
+              document: order.customer_cpf || "",
+            },
+            trackingParameters: {
+              src: order.utm_source || null,
+              sck: order.fbclid || null,
+              utm_source: order.utm_source || null,
+              utm_medium: order.utm_medium || null,
+              utm_campaign: order.utm_campaign || null,
+              utm_content: order.utm_content || null,
+              utm_term: order.utm_term || null,
+            },
+            product: {
+              name: `Passagem ${order.reservation_code || ""}`,
+              id: order.reservation_code || order.order_id,
+              price: order.amount,
+              quantity: 1,
+            },
+          };
+
+          const utmifyRes = await fetch(
+            "https://api.utmify.com.br/api-credentials/orders",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-api-token": utmifyToken,
+              },
+              body: JSON.stringify(utmifyPayload),
+            }
+          );
+          const utmifyResult = await utmifyRes.text();
+          console.log("[webhook] UTMify order sent:", utmifyResult.substring(0, 300));
+        } catch (utmifyErr) {
+          console.error("[webhook] UTMify error:", utmifyErr);
         }
       }
     }
