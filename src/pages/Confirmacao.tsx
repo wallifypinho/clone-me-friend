@@ -38,6 +38,7 @@ const Confirmacao = () => {
   const code = bookingCode || generatedCode;
 
   const [copied, setCopied] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
   // Track & save booking
   const savedRef = useRef(false);
@@ -84,6 +85,50 @@ const Confirmacao = () => {
       }
     });
   }, []);
+
+  // Poll payment status and fire Purchase event for UTMify/Pixel when confirmed
+  const purchaseFiredRef = useRef(false);
+  useEffect(() => {
+    if (!transactionId || paymentMethod !== 'pix' || purchaseFiredRef.current) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select('payment_status, paid_at')
+          .eq('gateway_transaction_id', transactionId)
+          .maybeSingle();
+
+        if (orderData?.payment_status === 'paid' && !purchaseFiredRef.current) {
+          purchaseFiredRef.current = true;
+          setPaymentConfirmed(true);
+          clearInterval(pollInterval);
+
+          // Fire Purchase event — this is what UTMify and Facebook Pixel capture
+          analytics.trackEvent('Purchase', {
+            value: total,
+            currency: 'BRL',
+            content_name: `${origem} → ${destino}`,
+            reservation_code: code,
+            transaction_id: transactionId,
+          });
+          analytics.updateScore('PURCHASE_COMPLETED');
+
+          toast.success("Pagamento confirmado!");
+        }
+      } catch (err) {
+        console.error("Poll error:", err);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    // Stop polling after 30 minutes
+    const timeout = setTimeout(() => clearInterval(pollInterval), 30 * 60 * 1000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(timeout);
+    };
+  }, [transactionId, paymentMethod]);
 
   const copyPixCode = () => {
     if (!pixCode) {
