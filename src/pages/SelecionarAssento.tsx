@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users } from "lucide-react";
+import { analytics } from "@/lib/analytics";
 
 type SeatStatus = "available" | "selected" | "unavailable";
 
@@ -53,7 +54,16 @@ const SelecionarAssento = () => {
 
   const total = price * selectedSeats.length;
 
+  useEffect(() => {
+    analytics.trackEvent('OfferViewed', { origin: origem, destination: destino, company, price, seat_type: seatType });
+  }, []);
+
   const handleConfirm = () => {
+    analytics.trackEvent('InitiateCheckout', {
+      origin: origem, destination: destino, company, amount: total,
+      currency: 'BRL', seats: selectedSeats.join(','), passenger_count: adultos,
+    });
+    analytics.updateScore('PASSENGER_INFO_STARTED');
     const params = new URLSearchParams({
       origem, destino, data, departure, arrival, company, seatType,
       price: String(price),

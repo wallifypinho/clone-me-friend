@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import ThermalTicket from "@/components/ThermalTicket";
+import { analytics } from "@/lib/analytics";
 
 const Confirmacao = () => {
   const [searchParams] = useSearchParams();
@@ -38,11 +39,21 @@ const Confirmacao = () => {
 
   const [copied, setCopied] = useState(false);
 
-  // Save booking
+  // Track & save booking
   const savedRef = useRef(false);
   useEffect(() => {
     if (savedRef.current || !nome || !cpf) return;
     savedRef.current = true;
+
+    // Analytics
+    analytics.identifyLead({ nome, cpf, reservation_code: code });
+    if (paymentMethod === 'pix') {
+      analytics.trackEvent('PixViewed', { reservation_code: code, amount: total, currency: 'BRL' });
+      analytics.updateScore('PIX_VIEWED');
+    }
+    analytics.trackEvent('ReservationViewed', { reservation_code: code, origin: origem, destination: destino, amount: total });
+
+    // Save booking
     supabase.from("bookings").insert({
       code,
       nome,
@@ -63,6 +74,14 @@ const Confirmacao = () => {
       status: paymentMethod === "pix" ? "awaiting_payment" : "pending",
     }).then(({ error }) => {
       if (error) console.error("Error saving booking:", error);
+      else {
+        // Save order attribution
+        analytics.saveOrderAttribution({
+          order_id: transactionId || code,
+          reservation_code: code,
+          purchase_value: total,
+        });
+      }
     });
   }, []);
 
@@ -74,6 +93,8 @@ const Confirmacao = () => {
     navigator.clipboard.writeText(pixCode);
     setCopied(true);
     toast.success("Código PIX copiado!");
+    analytics.trackEvent('PixCopied', { reservation_code: code, amount: total });
+    analytics.updateScore('PIX_COPIED');
     setTimeout(() => setCopied(false), 3000);
   };
 

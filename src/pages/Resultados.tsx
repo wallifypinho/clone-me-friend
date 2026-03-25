@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, MapPin, Calendar, Search, ArrowLeftRight } from "lucide-react";
 import { generateTrips } from "@/data/trips";
 import TripCard from "@/components/TripCard";
+import { analytics } from "@/lib/analytics";
 
 const CITIES = [
   "São Paulo, SP - Terminal Rodoviário do Tietê",
@@ -45,6 +46,12 @@ const Resultados = () => {
   const [sortBy, setSortBy] = useState("price");
 
   const trips = useMemo(() => generateTrips(origem, destino), [origem, destino]);
+
+  useEffect(() => {
+    analytics.trackEvent('Search', { origin: origem, destination: destino, date: data, passengers: adultos });
+    analytics.trackEvent('ViewContent', { content_type: 'route', origin: origem, destination: destino });
+    analytics.updateScore('VIEW_OFFER');
+  }, [origem, destino]);
 
   const filteredOrigem = CITIES.filter((c) =>
     c.toLowerCase().includes(origemInput.toLowerCase())

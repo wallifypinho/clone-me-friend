@@ -1,6 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Trip } from "@/data/trips";
 import { Clock, ChevronRight, Flame } from "lucide-react";
+import { analytics } from "@/lib/analytics";
 
 interface TripCardProps {
   trip: Trip;
@@ -12,6 +13,11 @@ const TripCard = ({ trip }: TripCardProps) => {
 
   const handleSelect = () => {
     if (trip.soldOut) return;
+    analytics.trackEvent('RouteSelected', {
+      origin: trip.origin, destination: trip.destination, company: trip.company,
+      price: trip.discountedPrice, seat_type: trip.seatType,
+    });
+    analytics.updateScore('ROUTE_SELECTED');
     // Pass full origin/destination from URL params (not truncated trip names)
     const params = new URLSearchParams({
       origem: searchParams.get("origem") || trip.origin,
