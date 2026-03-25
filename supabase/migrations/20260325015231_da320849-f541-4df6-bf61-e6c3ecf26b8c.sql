@@ -1,0 +1,1 @@
+UPDATE admin_settings SET value = 'https://api.hurapayments.com.br' WHERE key = 'gateway_api_url';
