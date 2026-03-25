@@ -39,6 +39,34 @@ const Pagamento = () => {
       const bookingCode = "RE" + Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 
       // Call edge function to create payment via gateway
+      // Gather attribution data to send with payment
+      const attrData = analytics.getAttributionData();
+      const { score } = analytics.getBuyerScore();
+      const attribution = {
+        session_id: analytics.getSessionId(),
+        visitor_id: analytics.getVisitorId(),
+        lead_id: analytics.getLeadData()?.lead_id || null,
+        customer_whatsapp: searchParams.get("whatsapp") || null,
+        buyer_score: score,
+        utm_source: attrData?.utm_source || null,
+        utm_medium: attrData?.utm_medium || null,
+        utm_campaign: attrData?.utm_campaign || null,
+        utm_content: attrData?.utm_content || null,
+        utm_term: attrData?.utm_term || null,
+        fbclid: attrData?.fbclid || null,
+        gclid: attrData?.gclid || null,
+        campaign_name: attrData?.campaign_name || null,
+        campaign_id: attrData?.campaign_id || null,
+        adset_name: attrData?.adset_name || null,
+        adset_id: attrData?.adset_id || null,
+        ad_name: attrData?.ad_name || null,
+        ad_id: attrData?.ad_id || null,
+        placement: attrData?.placement || null,
+        first_visit_at: attrData?.first_visit_at || null,
+        landing_page: attrData?.landing_page || null,
+        referrer: attrData?.referrer || null,
+      };
+
       const { data, error } = await supabase.functions.invoke("create-payment", {
         body: {
           amount: total,
@@ -47,6 +75,7 @@ const Pagamento = () => {
           customerCpf: cpf,
           customerEmail: email,
           paymentMethod: method,
+          attribution,
         },
       });
 

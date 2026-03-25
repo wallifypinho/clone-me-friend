@@ -94,6 +94,17 @@ export async function saveOrderAttribution(orderData: {
       ad_id: attr.ad_id || null,
       placement: attr.placement || null,
       purchase_value: orderData.purchase_value,
+      // Extended attribution fields
+      utm_source: attr.utm_source || null,
+      utm_medium: attr.utm_medium || null,
+      utm_campaign: attr.utm_campaign || null,
+      utm_content: attr.utm_content || null,
+      utm_term: attr.utm_term || null,
+      fbclid: attr.fbclid || null,
+      gclid: (attr as any).gclid || null,
+      landing_page: attr.landing_page || null,
+      referrer: attr.referrer || null,
+      first_visit_at: attr.first_visit_at || null,
     });
   } catch (e) {
     console.warn('[analytics] order attribution save failed', e);
