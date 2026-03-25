@@ -153,6 +153,36 @@ const Pagamento = () => {
 
       console.log("AnubisPay response:", data);
 
+      // ── Track OrderCreated + ReservationCreated (geração, NÃO conversão) ──
+      const generationPayload = {
+        reservation_code: bookingCode,
+        order_id: data?.order_id || bookingCode,
+        transaction_id: data?.transaction_id || null,
+        amount: total,
+        currency: 'BRL',
+        payment_method: method,
+        origin: origem,
+        destination: destino,
+        lead_id: leadId,
+        session_id: analytics.getSessionId(),
+        utm_source: attrData?.utm_source || null,
+        utm_medium: attrData?.utm_medium || null,
+        utm_campaign: attrData?.utm_campaign || null,
+        utm_content: attrData?.utm_content || null,
+        utm_term: attrData?.utm_term || null,
+        fbclid: attrData?.fbclid || null,
+        campaign_name: attrData?.campaign_name || null,
+        campaign_id: attrData?.campaign_id || null,
+        adset_name: attrData?.adset_name || null,
+        adset_id: attrData?.adset_id || null,
+        ad_name: attrData?.ad_name || null,
+        ad_id: attrData?.ad_id || null,
+        generated_at: new Date().toISOString(),
+      };
+
+      analytics.trackEvent('OrderCreated', generationPayload);
+      analytics.trackEvent('ReservationCreated', generationPayload);
+
       // Navigate to confirmation with payment data
       const params = new URLSearchParams(searchParams);
       params.set("paymentMethod", method);
@@ -163,6 +193,7 @@ const Pagamento = () => {
       if (data?.transaction_id) params.set("transactionId", data.transaction_id);
       if (data?.expires_at) params.set("expiresAt", data.expires_at);
       if (data?.fallback) params.set("fallback", "true");
+      if (data?.order_id) params.set("orderId", data.order_id);
 
       navigate(`/confirmacao?${params.toString()}`);
     } catch (err) {
