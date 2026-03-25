@@ -269,7 +269,7 @@ const Pagamento = () => {
               Processando...
             </>
           ) : (
-            "Continuar"
+            "Concluir Compra"
           )}
         </button>
       </div>
