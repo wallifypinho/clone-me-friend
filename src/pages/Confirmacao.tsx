@@ -23,7 +23,7 @@ const Confirmacao = () => {
   const nome = searchParams.get("nome") || "";
   const cpf = searchParams.get("cpf") || "";
   const paymentMethod = searchParams.get("paymentMethod") || "pix";
-  const pixCode = searchParams.get("pixCode") || "";
+  const pixCode = searchParams.get("pixCode") || searchParams.get("qrCode") || "";
   const bookingCode = searchParams.get("bookingCode") || "";
   const expiresAt = searchParams.get("expiresAt") || "";
   const transactionId = searchParams.get("transactionId") || "";
