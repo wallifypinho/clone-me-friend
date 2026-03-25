@@ -40,7 +40,7 @@ const Confirmacao = () => {
   const [copied, setCopied] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
-  // Track & save booking
+  // Track & update booking with gateway transaction ID
   const savedRef = useRef(false);
   useEffect(() => {
     if (savedRef.current || !nome || !cpf) return;
@@ -54,35 +54,29 @@ const Confirmacao = () => {
     }
     analytics.trackEvent('ReservationViewed', { reservation_code: code, origin: origem, destination: destino, amount: total });
 
-    // Save booking
-    supabase.from("bookings").insert({
-      code,
-      nome,
-      cpf,
-      email: searchParams.get("email") || null,
-      whatsapp: searchParams.get("whatsapp") || null,
-      origem,
-      destino,
-      data_viagem: data,
-      departure,
-      arrival,
-      company,
-      seat_type: seatType,
-      seats,
-      price_per_seat: price,
-      total,
-      payment_method: paymentMethod,
-      status: paymentMethod === "pix" ? "awaiting_payment" : "pending",
-    }).then(({ error }) => {
-      if (error) console.error("Error saving booking:", error);
-      else {
-        // Save order attribution
-        analytics.saveOrderAttribution({
-          order_id: transactionId || code,
-          reservation_code: code,
-          purchase_value: total,
+    // Track Lead event for UTMify — fires immediately so UTMify captures the lead
+    analytics.trackEvent('Lead', {
+      value: total,
+      currency: 'BRL',
+      content_name: `${origem} → ${destino}`,
+      reservation_code: code,
+    });
+
+    // Update booking with gateway_transaction_id (booking was created in Pagamento)
+    if (transactionId) {
+      supabase.from("bookings")
+        .update({ gateway_transaction_id: transactionId })
+        .eq("code", code)
+        .then(({ error }) => {
+          if (error) console.error("Error updating booking with txId:", error);
         });
-      }
+    }
+
+    // Save order attribution
+    analytics.saveOrderAttribution({
+      order_id: transactionId || code,
+      reservation_code: code,
+      purchase_value: total,
     });
   }, []);
 

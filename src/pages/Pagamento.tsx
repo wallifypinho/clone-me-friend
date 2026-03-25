@@ -39,7 +39,38 @@ const Pagamento = () => {
       const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
       const bookingCode = "RE" + Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 
-      // Call edge function to create payment via gateway
+      const data_viagem = searchParams.get("data") || "";
+      const departure = searchParams.get("departure") || "";
+      const arrival = searchParams.get("arrival") || "";
+      const company = searchParams.get("company") || "";
+      const seatType = searchParams.get("seatType") || "";
+      const whatsapp = searchParams.get("whatsapp") || null;
+
+      // Create booking FIRST so the webhook can find it
+      const { error: bookingError } = await supabase.from("bookings").insert({
+        code: bookingCode,
+        nome,
+        cpf,
+        email: email || null,
+        whatsapp,
+        origem,
+        destino,
+        data_viagem,
+        departure,
+        arrival,
+        company,
+        seat_type: seatType,
+        seats,
+        price_per_seat: price,
+        total,
+        payment_method: method,
+        status: "awaiting_payment",
+      });
+
+      if (bookingError) {
+        console.error("Error creating booking:", bookingError);
+      }
+
       // Gather attribution data to send with payment
       const attrData = analytics.getAttributionData();
       const { score } = analytics.getBuyerScore();
@@ -47,7 +78,7 @@ const Pagamento = () => {
         session_id: analytics.getSessionId(),
         visitor_id: analytics.getVisitorId(),
         lead_id: analytics.getLeadData()?.lead_id || null,
-        customer_whatsapp: searchParams.get("whatsapp") || null,
+        customer_whatsapp: whatsapp,
         buyer_score: score,
         utm_source: attrData?.utm_source || null,
         utm_medium: attrData?.utm_medium || null,
@@ -68,6 +99,9 @@ const Pagamento = () => {
         referrer: attrData?.referrer || null,
       };
 
+      // Identify lead for UTMify/Pixel
+      analytics.identifyLead({ nome, cpf, email, whatsapp: whatsapp || undefined, reservation_code: bookingCode });
+
       const { data, error } = await supabase.functions.invoke("create-payment", {
         body: {
           amount: total,
@@ -75,6 +109,7 @@ const Pagamento = () => {
           customerName: nome,
           customerCpf: cpf,
           customerEmail: email,
+          customerPhone: whatsapp,
           paymentMethod: method,
           attribution,
         },
