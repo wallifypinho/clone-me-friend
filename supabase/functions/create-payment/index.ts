@@ -76,7 +76,10 @@ Deno.serve(async (req) => {
       gatewayPayload.pix = { expires_in_days: 1 };
     }
 
-    const endpoint = `${gatewayUrl}/v1/payment-transaction/create`;
+    // If the URL already contains the full path, use it directly; otherwise append the path
+    const endpoint = gatewayUrl.includes("/payment-transaction/create") 
+      ? gatewayUrl 
+      : `${gatewayUrl.replace(/\/+$/, "")}/v1/payment-transaction/create`;
 
     // Try multiple auth strategies
     const authStrategies = [
