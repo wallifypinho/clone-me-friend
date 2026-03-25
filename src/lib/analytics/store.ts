@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getSessionId, getVisitorId } from './session';
 import { getAttributionData } from './attribution';
 import { getBuyerScore } from './buyerScore';
+import { STORAGE_KEYS } from './constants';
 
 let sessionSaved = false;
 
@@ -11,6 +12,8 @@ export async function saveSessionToDb(): Promise<void> {
 
   const attr = getAttributionData();
   if (!attr) return;
+
+  const { score, stage } = getBuyerScore();
 
   try {
     await (supabase.from('visitor_sessions' as any) as any).insert({
@@ -39,6 +42,9 @@ export async function saveSessionToDb(): Promise<void> {
       os: attr.os || null,
       language: attr.language || null,
       timezone: attr.timezone || null,
+      buyer_score: score,
+      buyer_stage: stage,
+      screen_resolution: attr.screen_resolution || null,
     });
   } catch (e) {
     console.warn('[analytics] session save failed', e);
@@ -52,12 +58,27 @@ export async function saveEventToDb(
 ): Promise<void> {
   try {
     const { score, stage } = getBuyerScore();
+    // Always try to get lead_id and reservation_code from enriched params or localStorage
+    let leadId = params.lead_id || null;
+    let reservationCode = params.reservation_code || null;
+
+    if (!leadId || !reservationCode) {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.LEAD_DATA);
+        if (raw) {
+          const ld = JSON.parse(raw);
+          if (!leadId) leadId = ld.lead_id || null;
+          if (!reservationCode) reservationCode = ld.reservation_code || null;
+        }
+      } catch {}
+    }
+
     await (supabase.from('visitor_events' as any) as any).insert({
       event_id: eventId,
       session_id: getSessionId(),
       visitor_id: getVisitorId(),
-      lead_id: params.lead_id || null,
-      reservation_code: params.reservation_code || null,
+      lead_id: leadId,
+      reservation_code: reservationCode,
       event_name: eventName,
       page_url: window.location.pathname,
       payload_json: params,
@@ -78,11 +99,25 @@ export async function saveOrderAttribution(orderData: {
   const attr = getAttributionData();
   if (!attr) return;
 
+  // Get lead_id from param or localStorage
+  let leadId = orderData.lead_id || null;
+  if (!leadId) {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.LEAD_DATA);
+      if (raw) {
+        const ld = JSON.parse(raw);
+        leadId = ld.lead_id || null;
+      }
+    } catch {}
+  }
+
+  const { score } = getBuyerScore();
+
   try {
     await (supabase.from('orders_attribution' as any) as any).insert({
       order_id: orderData.order_id,
       session_id: getSessionId(),
-      lead_id: orderData.lead_id || null,
+      lead_id: leadId,
       reservation_code: orderData.reservation_code,
       first_touch_source: attr.utm_source || attr.referrer || 'direct',
       last_touch_source: attr.utm_source || 'direct',
@@ -94,7 +129,7 @@ export async function saveOrderAttribution(orderData: {
       ad_id: attr.ad_id || null,
       placement: attr.placement || null,
       purchase_value: orderData.purchase_value,
-      // Extended attribution fields
+      buyer_score: score,
       utm_source: attr.utm_source || null,
       utm_medium: attr.utm_medium || null,
       utm_campaign: attr.utm_campaign || null,

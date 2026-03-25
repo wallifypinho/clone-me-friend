@@ -1,6 +1,8 @@
 /**
  * Central Analytics Manager
  * All tracking is invisible — no visual changes.
+ * Every event is auto-enriched with the full chain:
+ * session_id → lead_id → reservation_code → order_id + attribution
  */
 
 import { persistAttribution, getAttributionData, updateLastInteraction } from './attribution';
@@ -26,6 +28,50 @@ const CAPI_EVENTS = new Set([
 let initialized = false;
 const firedEvents = new Set<string>();
 
+/**
+ * Get the full journey chain from localStorage.
+ * This auto-enriches every event with connected IDs.
+ */
+function getJourneyChain(): Record<string, any> {
+  const attr = getAttributionData();
+  const leadData = getLeadDataInternal();
+  const { score, stage } = getBuyerScore();
+
+  return {
+    session_id: getSessionId(),
+    visitor_id: getVisitorId(),
+    lead_id: leadData?.lead_id || null,
+    reservation_code: leadData?.reservation_code || null,
+    order_id: leadData?.order_id || null,
+    buyer_score: score,
+    buyer_stage: stage,
+    // Attribution
+    utm_source: attr?.utm_source || null,
+    utm_medium: attr?.utm_medium || null,
+    utm_campaign: attr?.utm_campaign || null,
+    utm_content: attr?.utm_content || null,
+    utm_term: attr?.utm_term || null,
+    fbclid: attr?.fbclid || null,
+    gclid: attr?.gclid || null,
+    campaign_name: attr?.campaign_name || null,
+    campaign_id: attr?.campaign_id || null,
+    adset_name: attr?.adset_name || null,
+    adset_id: attr?.adset_id || null,
+    ad_name: attr?.ad_name || null,
+    ad_id: attr?.ad_id || null,
+    placement: attr?.placement || null,
+  };
+}
+
+function getLeadDataInternal(): Record<string, any> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.LEAD_DATA);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
 export const analytics = {
   init() {
     if (initialized) return;
@@ -48,24 +94,33 @@ export const analytics = {
     const eventId = generateEventId();
     const isStandard = STANDARD_FB_EVENTS.has(eventName);
 
+    // Auto-enrich with journey chain — explicit params override auto values
+    const chain = getJourneyChain();
+    const enriched = { ...chain, ...params, event_id: eventId };
+
     // Fire pixel
-    sendToMetaPixel(eventName, { ...params, event_id: eventId }, isStandard);
+    sendToMetaPixel(eventName, enriched, isStandard);
 
     // Save to internal DB (fire and forget)
-    saveEventToDb(eventName, eventId, params);
+    saveEventToDb(eventName, eventId, enriched);
 
     // Queue for CAPI if critical
     if (CAPI_EVENTS.has(eventName)) {
       const leadData = this.getLeadData();
-      queueServerEvent(eventName, eventId, leadData, params);
+      queueServerEvent(eventName, eventId, leadData, enriched);
     }
   },
 
   updateScore(action: keyof typeof SCORE_VALUES) {
-    return updateBuyerScore(action);
+    const result = updateBuyerScore(action);
+    // Sync score to session in DB (fire and forget)
+    import('@/lib/entities').then(({ updateSessionScore }) => {
+      updateSessionScore(getSessionId(), result.score);
+    }).catch(() => {});
+    return result;
   },
 
-  identifyLead(data: { nome?: string; email?: string; cpf?: string; whatsapp?: string; reservation_code?: string }) {
+  identifyLead(data: { nome?: string; email?: string; cpf?: string; whatsapp?: string; reservation_code?: string; order_id?: string }) {
     try {
       const existing = this.getLeadData();
       const merged = { ...existing, ...data };
@@ -74,12 +129,7 @@ export const analytics = {
   },
 
   getLeadData(): Record<string, any> {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.LEAD_DATA);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
+    return getLeadDataInternal();
   },
 
   markCheckoutAbandoned() {
