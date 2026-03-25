@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     const publicKey = keys?.find((k: any) => k.key === "gateway_public_key")?.value;
     const secretKey = keys?.find((k: any) => k.key === "gateway_secret_key")?.value;
-    const gatewayUrl = keys?.find((k: any) => k.key === "gateway_api_url")?.value || "https://api.hurapayments.com.br";
+    const gatewayUrl = keys?.find((k: any) => k.key === "gateway_api_url")?.value || "https://api.hurapayments.com.br/v1/payment-transaction/create";
 
     if (!publicKey || !secretKey) {
       return new Response(
