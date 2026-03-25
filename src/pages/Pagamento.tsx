@@ -4,6 +4,7 @@ import { ArrowLeft, QrCode, CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { analytics } from "@/lib/analytics";
+import { createReservation, updateReservationStatus, createTicketRecord } from "@/lib/entities";
 
 const Pagamento = () => {
   const [searchParams] = useSearchParams();
