@@ -118,6 +118,7 @@ const Confirmacao = () => {
 
   // PDF download
   const handleDownloadPdf = useCallback(() => {
+    analytics.trackEvent('TicketDownloaded', { reservation_code: code });
     const el = document.getElementById("thermal-ticket");
     if (!el) return;
     const printWindow = window.open("", "_blank");
