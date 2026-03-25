@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch gateway keys and URL from admin_settings
+    // Fetch gateway keys from admin_settings
     const { data: keys } = await supabase
       .from("admin_settings")
       .select("key, value")
@@ -43,106 +43,145 @@ Deno.serve(async (req) => {
       );
     }
 
-    // HuraPay API uses Basic Auth: base64(public_key:secret_key)
-    const basicAuth = btoa(`${publicKey}:${secretKey}`);
+    // HuraPay API - amount is in centavos (cents)
+    const amountInCents = Math.round(amount * 100);
+    const cpfClean = (customerCpf || "00000000000").replace(/\D/g, "");
 
     const gatewayPayload: Record<string, any> = {
+      amount: amountInCents,
       payment_method: paymentMethod === "pix" ? "pix" : "credit_card",
-      amount: Math.round(amount * 100), // amount in cents
+      postback_url: `${supabaseUrl}/functions/v1/payment-webhook`,
       customer: {
         name: customerName || "Cliente",
         email: customerEmail || "cliente@email.com",
         document: {
-          type: (customerCpf || "").replace(/\D/g, "").length > 11 ? "cnpj" : "cpf",
-          number: (customerCpf || "00000000000").replace(/\D/g, ""),
+          type: cpfClean.length > 11 ? "cnpj" : "cpf",
+          number: cpfClean,
         },
         phone: customerPhone || "+5500000000000",
       },
       items: [
         {
           title: `Passagem ${bookingCode}`,
-          unit_price: Math.round(amount * 100),
+          unit_price: amountInCents,
           quantity: 1,
           tangible: false,
         },
       ],
-      postback_url: `${supabaseUrl}/functions/v1/payment-webhook`,
-      metadata: JSON.stringify({ booking_code: bookingCode }),
+      metadata: { booking_code: bookingCode },
     };
 
-    // Add PIX expiration if PIX
+    // Add PIX config if applicable
     if (paymentMethod === "pix") {
       gatewayPayload.pix = { expires_in_days: 1 };
     }
 
     const endpoint = `${gatewayUrl}/v1/payment-transaction/create`;
-    console.log("Calling HuraPay:", endpoint, JSON.stringify({
-      payment_method: gatewayPayload.payment_method,
-      amount: gatewayPayload.amount,
-      bookingCode,
-    }));
 
-    const gatewayResponse = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": `Basic ${basicAuth}`,
-      },
-      body: JSON.stringify(gatewayPayload),
-    });
+    // Try multiple auth strategies
+    const authStrategies = [
+      { name: "Bearer SecretKey", headers: { "Authorization": `Bearer ${secretKey}` } },
+      { name: "Basic PK:SK", headers: { "Authorization": `Basic ${btoa(`${publicKey}:${secretKey}`)}` } },
+      { name: "Bearer PublicKey", headers: { "Authorization": `Bearer ${publicKey}` } },
+      { name: "ApiKey header", headers: { "x-api-key": secretKey } },
+    ];
 
-    const responseText = await gatewayResponse.text();
-    console.log(`HuraPay status: ${gatewayResponse.status}`);
-    console.log(`HuraPay response: ${responseText.substring(0, 1000)}`);
+    let lastResponse: Response | null = null;
+    let lastResponseText = "";
+    let lastStrategy = "";
 
-    let gatewayData: any;
-    try {
-      gatewayData = JSON.parse(responseText);
-    } catch {
+    for (const strategy of authStrategies) {
+      console.log(`Trying auth: ${strategy.name}`);
+      
+      try {
+        lastResponse = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            ...strategy.headers,
+          },
+          body: JSON.stringify(gatewayPayload),
+        });
+
+        lastResponseText = await lastResponse.text();
+        lastStrategy = strategy.name;
+
+        console.log(`${strategy.name} => status ${lastResponse.status}: ${lastResponseText.substring(0, 300)}`);
+
+        // If not 401/403, we found the right auth (even if other error)
+        if (lastResponse.status !== 401 && lastResponse.status !== 403) {
+          break;
+        }
+      } catch (fetchErr) {
+        console.error(`${strategy.name} fetch error:`, fetchErr);
+        continue;
+      }
+    }
+
+    if (!lastResponse) {
       return new Response(
-        JSON.stringify({ error: "Resposta inválida do gateway de pagamento", details: responseText.substring(0, 500) }),
+        JSON.stringify({ error: "Não foi possível conectar ao gateway de pagamento" }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!gatewayResponse.ok) {
-      const isAuthError = gatewayResponse.status === 401 || gatewayResponse.status === 403;
-      console.error("HuraPay error:", gatewayResponse.status, gatewayData);
+    let gatewayData: any;
+    try {
+      gatewayData = JSON.parse(lastResponseText);
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Resposta inválida do gateway", details: lastResponseText.substring(0, 500), auth: lastStrategy }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!lastResponse.ok) {
+      const isAuthError = lastResponse.status === 401 || lastResponse.status === 403;
       return new Response(
         JSON.stringify({
           error: isAuthError
-            ? "Falha de autenticação no gateway. Verifique as chaves Public Key e Secret Key no painel admin."
-            : `Erro no gateway de pagamento (${gatewayResponse.status})`,
-          status: gatewayResponse.status,
+            ? "Falha de autenticação no gateway. Verifique as chaves no painel admin."
+            : `Erro no gateway (${lastResponse.status})`,
+          status: lastResponse.status,
+          auth_strategy: lastStrategy,
           details: gatewayData,
         }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Parse HuraPay response - data is an array
-    const txData = Array.isArray(gatewayData?.data) ? gatewayData.data[0] : gatewayData?.data || gatewayData;
-    const pixInfo = Array.isArray(txData?.pix) ? txData.pix[0] : txData?.pix || {};
+    // Parse HuraPay response
+    // Response format: { Id, Status, Amount, PaymentMethod, ... }
+    // For PIX: may contain pix_code/qr_code in nested object or at root
+    const txId = gatewayData?.Id || gatewayData?.id || gatewayData?.data?.Id || gatewayData?.data?.id;
+    const txStatus = gatewayData?.Status || gatewayData?.status || "PENDING";
+
+    // Try to extract PIX data from various possible response structures
+    const pixData = gatewayData?.pix || gatewayData?.Pix || {};
+    const pixCode = pixData?.qr_code || pixData?.QrCode || pixData?.code || 
+                    gatewayData?.pix_code || gatewayData?.PixCode || 
+                    gatewayData?.qr_code || gatewayData?.QrCode || "";
+    const pixUrl = pixData?.url || pixData?.Url || gatewayData?.pix_url || "";
 
     const result = {
       success: true,
-      transaction_id: txData?.id || gatewayData?.id,
-      status: txData?.status || "PENDING",
-      pix_code: pixInfo?.qr_code || "",
-      qr_code_url: pixInfo?.url || "",
+      transaction_id: txId,
+      status: txStatus,
+      pix_code: pixCode,
+      qr_code_url: pixUrl,
       qr_code_base64: "",
       amount,
-      expires_at: pixInfo?.expiration_date || new Date(Date.now() + 86400 * 1000).toISOString(),
+      auth_strategy: lastStrategy,
+      expires_at: gatewayData?.ExpiresAt || gatewayData?.expires_at || 
+                  new Date(Date.now() + 86400 * 1000).toISOString(),
+      raw_response: gatewayData, // Include full response for debugging
     };
 
     // Update booking status
     await supabase
       .from("bookings")
-      .update({
-        status: "awaiting_payment",
-        payment_method: paymentMethod,
-      })
+      .update({ status: "awaiting_payment", payment_method: paymentMethod })
       .eq("code", bookingCode);
 
     return new Response(JSON.stringify(result), {
