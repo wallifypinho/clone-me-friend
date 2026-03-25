@@ -104,6 +104,201 @@ export type Database = {
         }
         Relationships: []
       }
+      orders_attribution: {
+        Row: {
+          ad_id: string | null
+          ad_name: string | null
+          adset_id: string | null
+          adset_name: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          created_at: string
+          first_touch_source: string | null
+          id: string
+          last_touch_source: string | null
+          lead_id: string | null
+          order_id: string | null
+          placement: string | null
+          purchase_date: string | null
+          purchase_value: number | null
+          reservation_code: string | null
+          session_id: string | null
+        }
+        Insert: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          created_at?: string
+          first_touch_source?: string | null
+          id?: string
+          last_touch_source?: string | null
+          lead_id?: string | null
+          order_id?: string | null
+          placement?: string | null
+          purchase_date?: string | null
+          purchase_value?: number | null
+          reservation_code?: string | null
+          session_id?: string | null
+        }
+        Update: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          created_at?: string
+          first_touch_source?: string | null
+          id?: string
+          last_touch_source?: string | null
+          lead_id?: string | null
+          order_id?: string | null
+          placement?: string | null
+          purchase_date?: string | null
+          purchase_value?: number | null
+          reservation_code?: string | null
+          session_id?: string | null
+        }
+        Relationships: []
+      }
+      visitor_events: {
+        Row: {
+          buyer_score: number | null
+          buyer_stage: string | null
+          event_id: string
+          event_name: string
+          event_timestamp: string
+          id: string
+          lead_id: string | null
+          page_url: string | null
+          payload_json: Json | null
+          reservation_code: string | null
+          session_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          buyer_score?: number | null
+          buyer_stage?: string | null
+          event_id: string
+          event_name: string
+          event_timestamp?: string
+          id?: string
+          lead_id?: string | null
+          page_url?: string | null
+          payload_json?: Json | null
+          reservation_code?: string | null
+          session_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          buyer_score?: number | null
+          buyer_stage?: string | null
+          event_id?: string
+          event_name?: string
+          event_timestamp?: string
+          id?: string
+          lead_id?: string | null
+          page_url?: string | null
+          payload_json?: Json | null
+          reservation_code?: string | null
+          session_id?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      visitor_sessions: {
+        Row: {
+          ad_id: string | null
+          ad_name: string | null
+          adset_id: string | null
+          adset_name: string | null
+          browser: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          created_at: string
+          device_type: string | null
+          fbclid: string | null
+          first_visit_at: string | null
+          gclid: string | null
+          id: string
+          landing_page: string | null
+          language: string | null
+          last_interaction_at: string | null
+          os: string | null
+          placement: string | null
+          referrer: string | null
+          session_id: string
+          timezone: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          browser?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          created_at?: string
+          device_type?: string | null
+          fbclid?: string | null
+          first_visit_at?: string | null
+          gclid?: string | null
+          id?: string
+          landing_page?: string | null
+          language?: string | null
+          last_interaction_at?: string | null
+          os?: string | null
+          placement?: string | null
+          referrer?: string | null
+          session_id: string
+          timezone?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          browser?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          created_at?: string
+          device_type?: string | null
+          fbclid?: string | null
+          first_visit_at?: string | null
+          gclid?: string | null
+          id?: string
+          landing_page?: string | null
+          language?: string | null
+          last_interaction_at?: string | null
+          os?: string | null
+          placement?: string | null
+          referrer?: string | null
+          session_id?: string
+          timezone?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

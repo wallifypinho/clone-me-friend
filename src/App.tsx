@@ -12,6 +12,7 @@ import Confirmacao from "./pages/Confirmacao.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
 import UserPanel from "./pages/UserPanel.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import AnalyticsProvider from "./components/AnalyticsProvider";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AnalyticsProvider />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/resultados" element={<Resultados />} />

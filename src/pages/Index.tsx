@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import Header from "@/components/Header";
 import SearchForm from "@/components/SearchForm";
 import DestinationCard from "@/components/DestinationCard";
 import HomeSections from "@/components/HomeSections";
+import { analytics } from "@/lib/analytics";
 
 const offers1 = [
   { image: "/images/dest-rio.webp", origem: "São Paulo, SP", destino: "Rio de Janeiro, RJ", price: "25,00" },
@@ -18,6 +20,10 @@ const offers2 = [
 ];
 
 const Index = () => {
+  useEffect(() => {
+    analytics.updateScore('PAGE_VIEW_HOME');
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />

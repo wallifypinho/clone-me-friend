@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, QrCode, CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { analytics } from "@/lib/analytics";
 
 const Pagamento = () => {
   const [searchParams] = useSearchParams();
@@ -20,9 +21,17 @@ const Pagamento = () => {
   const [method, setMethod] = useState<"pix" | "card" | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    analytics.trackEvent('PaymentScreenViewed', { origin: origem, destination: destino, amount: total, currency: 'BRL' });
+    analytics.trackEvent('AddPaymentInfo', { value: total, currency: 'BRL' });
+    analytics.updateScore('PAYMENT_SCREEN_VIEWED');
+  }, []);
+
   const handleContinue = async () => {
     if (!method) return;
     setLoading(true);
+    analytics.trackEvent('PaymentLinkGenerated', { payment_type: method, amount: total, currency: 'BRL' });
+    analytics.updateScore('PAYMENT_LINK_GENERATED');
 
     try {
       // Generate booking code
