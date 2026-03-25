@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, CalendarDays, Clock, Bus, Armchair, Users, DollarSign, User, CreditCard, Mail, Phone } from "lucide-react";
 import { analytics } from "@/lib/analytics";
+import { upsertLead } from "@/lib/entities";
 
 const DadosPassageiro = () => {
   const [searchParams] = useSearchParams();
@@ -53,7 +54,16 @@ const DadosPassageiro = () => {
     analytics.updateScore('PASSENGER_INFO_STARTED');
   }, []);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    // Create/update lead in DB
+    const leadId = await upsertLead({
+      name: nome,
+      email,
+      phone: whatsapp.replace(/\D/g, ""),
+      whatsapp: whatsapp.replace(/\D/g, ""),
+      cpf: cpf.replace(/\D/g, ""),
+    });
+
     analytics.identifyLead({ nome, email, cpf: cpf.replace(/\D/g, ""), whatsapp: whatsapp.replace(/\D/g, "") });
     analytics.trackEvent('PassengerInfoCompleted', { origin: origem, destination: destino, nome });
     analytics.trackEvent('Lead', { content_name: `${origem} → ${destino}`, value: total, currency: 'BRL' });
@@ -62,6 +72,7 @@ const DadosPassageiro = () => {
       origem, destino, data, departure, arrival, company, seatType,
       price: String(price), adultos: String(adultos), seats,
       nome, cpf: cpf.replace(/\D/g, ""), email, whatsapp: whatsapp.replace(/\D/g, ""),
+      leadId,
     });
     navigate(`/pagamento?${params.toString()}`);
   };
