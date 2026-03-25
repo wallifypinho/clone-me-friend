@@ -75,9 +75,12 @@ export async function createReservation(data: {
   baseAmount: number;
   totalAmount: number;
 }): Promise<void> {
+  const sessionId = analytics.getSessionId();
+
   const { error } = await supabase.from("reservations").insert({
     reservation_code: data.reservationCode,
     lead_id: data.leadId,
+    session_id: sessionId,
     origin: data.origin,
     destination: data.destination,
     departure_date: data.departureDate,

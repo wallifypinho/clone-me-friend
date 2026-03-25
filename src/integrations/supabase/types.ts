@@ -431,6 +431,7 @@ export type Database = {
           return_date: string | null
           seat_type: string | null
           seats: string | null
+          session_id: string | null
           total_amount: number
           updated_at: string
         }
@@ -451,6 +452,7 @@ export type Database = {
           return_date?: string | null
           seat_type?: string | null
           seats?: string | null
+          session_id?: string | null
           total_amount?: number
           updated_at?: string
         }
@@ -471,6 +473,7 @@ export type Database = {
           return_date?: string | null
           seat_type?: string | null
           seats?: string | null
+          session_id?: string | null
           total_amount?: number
           updated_at?: string
         }
@@ -594,6 +597,7 @@ export type Database = {
           adset_name: string | null
           browser: string | null
           buyer_score: number | null
+          buyer_stage: string | null
           campaign_id: string | null
           campaign_name: string | null
           created_at: string
@@ -608,6 +612,7 @@ export type Database = {
           os: string | null
           placement: string | null
           referrer: string | null
+          screen_resolution: string | null
           session_id: string
           timezone: string | null
           utm_campaign: string | null
@@ -624,6 +629,7 @@ export type Database = {
           adset_name?: string | null
           browser?: string | null
           buyer_score?: number | null
+          buyer_stage?: string | null
           campaign_id?: string | null
           campaign_name?: string | null
           created_at?: string
@@ -638,6 +644,7 @@ export type Database = {
           os?: string | null
           placement?: string | null
           referrer?: string | null
+          screen_resolution?: string | null
           session_id: string
           timezone?: string | null
           utm_campaign?: string | null
@@ -654,6 +661,7 @@ export type Database = {
           adset_name?: string | null
           browser?: string | null
           buyer_score?: number | null
+          buyer_stage?: string | null
           campaign_id?: string | null
           campaign_name?: string | null
           created_at?: string
@@ -668,6 +676,7 @@ export type Database = {
           os?: string | null
           placement?: string | null
           referrer?: string | null
+          screen_resolution?: string | null
           session_id?: string
           timezone?: string | null
           utm_campaign?: string | null

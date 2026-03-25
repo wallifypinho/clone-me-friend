@@ -121,8 +121,12 @@ const Pagamento = () => {
         referrer: attrData?.referrer || null,
       };
 
-      // Identify lead for UTMify/Pixel
-      analytics.identifyLead({ nome, cpf, email, whatsapp: whatsapp || undefined, reservation_code: bookingCode });
+      // Identify lead and store chain IDs for auto-enrichment
+      analytics.identifyLead({
+        nome, cpf, email, whatsapp: whatsapp || undefined,
+        reservation_code: bookingCode,
+        order_id: undefined, // will be set after payment response
+      });
 
       const { data, error } = await supabase.functions.invoke("create-payment", {
         body: {
@@ -153,35 +157,28 @@ const Pagamento = () => {
 
       console.log("AnubisPay response:", data);
 
+      // Store order_id in lead chain for auto-enrichment
+      const orderId = data?.order_id || bookingCode;
+      analytics.identifyLead({ order_id: orderId, reservation_code: bookingCode });
+
       // ── Track OrderCreated + ReservationCreated (geração, NÃO conversão) ──
-      const generationPayload = {
+      analytics.trackEvent('OrderCreated', {
         reservation_code: bookingCode,
-        order_id: data?.order_id || bookingCode,
+        order_id: orderId,
         transaction_id: data?.transaction_id || null,
         amount: total,
         currency: 'BRL',
         payment_method: method,
         origin: origem,
         destination: destino,
-        lead_id: leadId,
-        session_id: analytics.getSessionId(),
-        utm_source: attrData?.utm_source || null,
-        utm_medium: attrData?.utm_medium || null,
-        utm_campaign: attrData?.utm_campaign || null,
-        utm_content: attrData?.utm_content || null,
-        utm_term: attrData?.utm_term || null,
-        fbclid: attrData?.fbclid || null,
-        campaign_name: attrData?.campaign_name || null,
-        campaign_id: attrData?.campaign_id || null,
-        adset_name: attrData?.adset_name || null,
-        adset_id: attrData?.adset_id || null,
-        ad_name: attrData?.ad_name || null,
-        ad_id: attrData?.ad_id || null,
         generated_at: new Date().toISOString(),
-      };
-
-      analytics.trackEvent('OrderCreated', generationPayload);
-      analytics.trackEvent('ReservationCreated', generationPayload);
+      });
+      analytics.trackEvent('ReservationCreated', {
+        reservation_code: bookingCode,
+        order_id: orderId,
+        amount: total,
+        currency: 'BRL',
+      });
 
       // Navigate to confirmation with payment data
       const params = new URLSearchParams(searchParams);
