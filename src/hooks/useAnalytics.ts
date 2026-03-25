@@ -61,20 +61,7 @@ export function useAnalyticsInit() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // On unload: send time on page + scroll depth
-  useEffect(() => {
-    const onBeforeUnload = () => {
-      const timeSpent = Math.round((Date.now() - pageEntryTime.current) / 1000);
-      // Use sendBeacon-friendly approach: pixel fires synchronously
-      analytics.trackEvent('PageExit', {
-        page: lastPath.current,
-        time_on_page_seconds: timeSpent,
-        max_scroll_depth: maxScroll.current,
-      });
-    };
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, []);
+  // PageExit removed — it generated noise in Meta without analytical value
 }
 
 /**
