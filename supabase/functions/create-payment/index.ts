@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     const publicKey = keys?.find((k: any) => k.key === "gateway_public_key")?.value;
     const secretKey = keys?.find((k: any) => k.key === "gateway_secret_key")?.value;
-    const gatewayUrl = keys?.find((k: any) => k.key === "gateway_api_url")?.value || "https://api.hurapayments.com.br";
+    const gatewayUrl = keys?.find((k: any) => k.key === "gateway_api_url")?.value || "https://api.hurapayments.com.br/v1/payment-transaction/create";
 
     if (!publicKey || !secretKey) {
       return new Response(
@@ -76,7 +76,10 @@ Deno.serve(async (req) => {
       gatewayPayload.pix = { expires_in_days: 1 };
     }
 
-    const endpoint = `${gatewayUrl}/v1/payment-transaction/create`;
+    // If the URL already contains the full path, use it directly; otherwise append the path
+    const endpoint = gatewayUrl.includes("/payment-transaction/create") 
+      ? gatewayUrl 
+      : `${gatewayUrl.replace(/\/+$/, "")}/v1/payment-transaction/create`;
 
     // Try multiple auth strategies
     const authStrategies = [
