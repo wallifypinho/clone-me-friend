@@ -72,6 +72,27 @@ const Pagamento = () => {
         console.error("Error creating booking:", bookingError);
       }
 
+      // Create reservation entity (parallel to booking, new architecture)
+      const leadId = searchParams.get("leadId") || "";
+      const seatList = seats.split(",");
+      createReservation({
+        reservationCode: bookingCode,
+        leadId,
+        origin: origem,
+        destination: destino,
+        departureDate: data_viagem,
+        departureTime: departure,
+        arrivalTime: arrival,
+        company,
+        seatType,
+        seats,
+        passengerCount: seatList.length,
+        baseAmount: price,
+        totalAmount: total,
+      }).then(() => {
+        updateReservationStatus(bookingCode, "awaiting_payment");
+      });
+
       // Gather attribution data to send with payment
       const attrData = analytics.getAttributionData();
       const { score } = analytics.getBuyerScore();
