@@ -49,9 +49,11 @@ export type Database = {
           departure: string
           destino: string
           email: string | null
+          gateway_transaction_id: string | null
           id: string
           nome: string
           origem: string
+          paid_at: string | null
           payment_method: string
           price_per_seat: number
           seat_type: string
@@ -70,9 +72,11 @@ export type Database = {
           departure: string
           destino: string
           email?: string | null
+          gateway_transaction_id?: string | null
           id?: string
           nome: string
           origem: string
+          paid_at?: string | null
           payment_method?: string
           price_per_seat: number
           seat_type: string
@@ -91,9 +95,11 @@ export type Database = {
           departure?: string
           destino?: string
           email?: string | null
+          gateway_transaction_id?: string | null
           id?: string
           nome?: string
           origem?: string
+          paid_at?: string | null
           payment_method?: string
           price_per_seat?: number
           seat_type?: string
@@ -104,63 +110,264 @@ export type Database = {
         }
         Relationships: []
       }
-      orders_attribution: {
+      orders: {
         Row: {
           ad_id: string | null
           ad_name: string | null
           adset_id: string | null
           adset_name: string | null
+          amount: number
+          buyer_score: number | null
           campaign_id: string | null
           campaign_name: string | null
           created_at: string
-          first_touch_source: string | null
+          currency: string
+          customer_cpf: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_whatsapp: string | null
+          fbclid: string | null
+          first_visit_at: string | null
+          gateway_transaction_id: string | null
+          gclid: string | null
           id: string
-          last_touch_source: string | null
+          landing_page: string | null
+          last_gateway_update_at: string | null
           lead_id: string | null
-          order_id: string | null
+          order_id: string
+          paid_at: string | null
+          payment_method: string | null
+          payment_status: string
           placement: string | null
-          purchase_date: string | null
-          purchase_value: number | null
+          raw_gateway_response: Json | null
+          referrer: string | null
           reservation_code: string | null
           session_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string | null
         }
         Insert: {
           ad_id?: string | null
           ad_name?: string | null
           adset_id?: string | null
           adset_name?: string | null
+          amount?: number
+          buyer_score?: number | null
           campaign_id?: string | null
           campaign_name?: string | null
           created_at?: string
-          first_touch_source?: string | null
+          currency?: string
+          customer_cpf?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_whatsapp?: string | null
+          fbclid?: string | null
+          first_visit_at?: string | null
+          gateway_transaction_id?: string | null
+          gclid?: string | null
           id?: string
-          last_touch_source?: string | null
+          landing_page?: string | null
+          last_gateway_update_at?: string | null
           lead_id?: string | null
-          order_id?: string | null
+          order_id: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string
           placement?: string | null
-          purchase_date?: string | null
-          purchase_value?: number | null
+          raw_gateway_response?: Json | null
+          referrer?: string | null
           reservation_code?: string | null
           session_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
         }
         Update: {
           ad_id?: string | null
           ad_name?: string | null
           adset_id?: string | null
           adset_name?: string | null
+          amount?: number
+          buyer_score?: number | null
           campaign_id?: string | null
           campaign_name?: string | null
           created_at?: string
-          first_touch_source?: string | null
+          currency?: string
+          customer_cpf?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_whatsapp?: string | null
+          fbclid?: string | null
+          first_visit_at?: string | null
+          gateway_transaction_id?: string | null
+          gclid?: string | null
           id?: string
+          landing_page?: string | null
+          last_gateway_update_at?: string | null
+          lead_id?: string | null
+          order_id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          placement?: string | null
+          raw_gateway_response?: Json | null
+          referrer?: string | null
+          reservation_code?: string | null
+          session_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      orders_attribution: {
+        Row: {
+          ad_id: string | null
+          ad_name: string | null
+          adset_id: string | null
+          adset_name: string | null
+          buyer_score: number | null
+          campaign_id: string | null
+          campaign_name: string | null
+          confirmed_at: string | null
+          created_at: string
+          fbclid: string | null
+          first_touch_source: string | null
+          first_visit_at: string | null
+          gateway_transaction_id: string | null
+          gclid: string | null
+          id: string
+          landing_page: string | null
+          last_touch_source: string | null
+          lead_id: string | null
+          order_id: string | null
+          payment_confirmed: boolean | null
+          placement: string | null
+          purchase_date: string | null
+          purchase_value: number | null
+          referrer: string | null
+          reservation_code: string | null
+          session_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          buyer_score?: number | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          fbclid?: string | null
+          first_touch_source?: string | null
+          first_visit_at?: string | null
+          gateway_transaction_id?: string | null
+          gclid?: string | null
+          id?: string
+          landing_page?: string | null
           last_touch_source?: string | null
           lead_id?: string | null
           order_id?: string | null
+          payment_confirmed?: boolean | null
           placement?: string | null
           purchase_date?: string | null
           purchase_value?: number | null
+          referrer?: string | null
           reservation_code?: string | null
           session_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          buyer_score?: number | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          fbclid?: string | null
+          first_touch_source?: string | null
+          first_visit_at?: string | null
+          gateway_transaction_id?: string | null
+          gclid?: string | null
+          id?: string
+          landing_page?: string | null
+          last_touch_source?: string | null
+          lead_id?: string | null
+          order_id?: string | null
+          payment_confirmed?: boolean | null
+          placement?: string | null
+          purchase_date?: string | null
+          purchase_value?: number | null
+          referrer?: string | null
+          reservation_code?: string | null
+          session_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
+      payment_events: {
+        Row: {
+          event_id: string
+          gateway_transaction_id: string | null
+          id: string
+          is_duplicate: boolean | null
+          normalized_status: string | null
+          order_id: string | null
+          payload_json: Json | null
+          processed_at: string | null
+          raw_status: string | null
+          received_at: string
+        }
+        Insert: {
+          event_id: string
+          gateway_transaction_id?: string | null
+          id?: string
+          is_duplicate?: boolean | null
+          normalized_status?: string | null
+          order_id?: string | null
+          payload_json?: Json | null
+          processed_at?: string | null
+          raw_status?: string | null
+          received_at?: string
+        }
+        Update: {
+          event_id?: string
+          gateway_transaction_id?: string | null
+          id?: string
+          is_duplicate?: boolean | null
+          normalized_status?: string | null
+          order_id?: string | null
+          payload_json?: Json | null
+          processed_at?: string | null
+          raw_status?: string | null
+          received_at?: string
         }
         Relationships: []
       }
