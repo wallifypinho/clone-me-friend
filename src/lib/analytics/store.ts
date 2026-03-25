@@ -3,7 +3,6 @@ import { getSessionId, getVisitorId } from './session';
 import { getAttributionData } from './attribution';
 import { getBuyerScore } from './buyerScore';
 
-// Debounced session save
 let sessionSaved = false;
 
 export async function saveSessionToDb(): Promise<void> {
@@ -14,7 +13,7 @@ export async function saveSessionToDb(): Promise<void> {
   if (!attr) return;
 
   try {
-    await supabase.from('visitor_sessions').insert({
+    await (supabase.from('visitor_sessions' as any) as any).insert({
       session_id: getSessionId(),
       visitor_id: getVisitorId(),
       first_visit_at: attr.first_visit_at,
@@ -53,7 +52,7 @@ export async function saveEventToDb(
 ): Promise<void> {
   try {
     const { score, stage } = getBuyerScore();
-    await supabase.from('visitor_events').insert({
+    await (supabase.from('visitor_events' as any) as any).insert({
       event_id: eventId,
       session_id: getSessionId(),
       visitor_id: getVisitorId(),
@@ -80,7 +79,7 @@ export async function saveOrderAttribution(orderData: {
   if (!attr) return;
 
   try {
-    await supabase.from('orders_attribution').insert({
+    await (supabase.from('orders_attribution' as any) as any).insert({
       order_id: orderData.order_id,
       session_id: getSessionId(),
       lead_id: orderData.lead_id || null,
