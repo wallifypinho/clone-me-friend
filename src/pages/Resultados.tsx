@@ -4,23 +4,13 @@ import { ArrowLeft, MapPin, Calendar, Search, ArrowLeftRight } from "lucide-reac
 import { generateTrips } from "@/data/trips";
 import TripCard from "@/components/TripCard";
 import { analytics } from "@/lib/analytics";
-
-const CITIES = [
-  "São Paulo, SP - Terminal Rodoviário do Tietê",
-  "São Paulo, SP - Terminal Rodoviário Barra Funda",
-  "São Paulo, SP - Terminal Rodoviário Jabaquara",
-  "Rio de Janeiro, RJ - Rodoviária Novo Rio",
-  "Curitiba, PR - Terminal Rodoviário de Curitiba",
-  "Campinas, SP - Terminal Rodoviário de Campinas",
-  "Salvador, BA - Rodoviária de Salvador",
-  "Brasília, DF - Rodoviária Interestadual de Brasília",
-  "Florianópolis, SC - Terminal Rodoviário Rita Maria",
-  "Porto Alegre, RS - Estação Rodoviária de Porto Alegre",
-  "Goiânia, GO - Terminal Rodoviário de Goiânia",
-  "Belo Horizonte, MG",
-];
+import { searchCidades, formatCityDisplay, findCityByDisplay, findCityByName } from "@/data/cidadesBrasil";
 
 const getCityDisplayName = (fullName: string) => {
+  // Try new format "Cidade - UF" first
+  const city = findCityByDisplay(fullName) || findCityByName(fullName);
+  if (city) return city.nome;
+  // Fallback legacy format
   return fullName.split(",")[0].trim();
 };
 
@@ -53,12 +43,8 @@ const Resultados = () => {
     analytics.updateScore('VIEW_OFFER');
   }, [origem, destino]);
 
-  const filteredOrigem = CITIES.filter((c) =>
-    c.toLowerCase().includes(origemInput.toLowerCase())
-  );
-  const filteredDestino = CITIES.filter((c) =>
-    c.toLowerCase().includes(destinoInput.toLowerCase())
-  );
+  const filteredOrigem = searchCidades(origemInput, 10).map(formatCityDisplay);
+  const filteredDestino = searchCidades(destinoInput, 10).map(formatCityDisplay);
 
   const filteredTrips = useMemo(() => {
     let result = [...trips];

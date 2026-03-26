@@ -1,21 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, ArrowLeftRight, Calendar, Users, Search } from "lucide-react";
-
-const CITIES = [
-  "São Paulo, SP - Terminal Rodoviário do Tietê",
-  "São Paulo, SP - Terminal Rodoviário Barra Funda",
-  "São Paulo, SP - Terminal Rodoviário Jabaquara",
-  "Rio de Janeiro, RJ - Rodoviária Novo Rio",
-  "Curitiba, PR - Terminal Rodoviário de Curitiba",
-  "Campinas, SP - Terminal Rodoviário de Campinas",
-  "Salvador, BA - Rodoviária de Salvador",
-  "Brasília, DF - Rodoviária Interestadual de Brasília",
-  "Florianópolis, SC - Terminal Rodoviário Rita Maria",
-  "Porto Alegre, RS - Estação Rodoviária de Porto Alegre",
-  "Goiânia, GO - Terminal Rodoviário de Goiânia",
-  "Belo Horizonte, MG",
-];
+import { searchCidades, formatCityDisplay } from "@/data/cidadesBrasil";
 
 const SearchForm = () => {
   const navigate = useNavigate();
@@ -28,12 +14,8 @@ const SearchForm = () => {
   const [showOrigemSuggestions, setShowOrigemSuggestions] = useState(false);
   const [showDestinoSuggestions, setShowDestinoSuggestions] = useState(false);
 
-  const filteredOrigem = CITIES.filter((c) =>
-    c.toLowerCase().includes(origem.toLowerCase())
-  );
-  const filteredDestino = CITIES.filter((c) =>
-    c.toLowerCase().includes(destino.toLowerCase())
-  );
+  const filteredOrigem = searchCidades(origem, 10).map(formatCityDisplay);
+  const filteredDestino = searchCidades(destino, 10).map(formatCityDisplay);
 
   const swapCities = () => {
     setOrigem(destino);
