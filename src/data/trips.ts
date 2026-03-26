@@ -1,3 +1,5 @@
+import { generateDynamicTrips } from "@/lib/routeCalculator";
+
 export interface Trip {
   company: string;
   companyLogo: string;
@@ -15,7 +17,6 @@ export interface Trip {
 
 export const generateTrips = (origin: string, destination: string): Trip[] => {
   // Tentar geração dinâmica primeiro
-  const { generateDynamicTrips } = require("@/lib/routeCalculator");
   const dynamicTrips = generateDynamicTrips(origin, destination);
   if (dynamicTrips && dynamicTrips.length > 0) {
     return dynamicTrips;
