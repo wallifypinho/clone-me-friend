@@ -1,3 +1,5 @@
+import { generateDynamicTrips } from "@/lib/routeCalculator";
+
 export interface Trip {
   company: string;
   companyLogo: string;
@@ -14,6 +16,13 @@ export interface Trip {
 }
 
 export const generateTrips = (origin: string, destination: string): Trip[] => {
+  // Tentar geração dinâmica primeiro
+  const dynamicTrips = generateDynamicTrips(origin, destination);
+  if (dynamicTrips && dynamicTrips.length > 0) {
+    return dynamicTrips;
+  }
+
+  // Fallback: lógica original para compatibilidade
   const companies = [
     { name: "Andorinha", logo: "🚌" },
     { name: "Caiçara", logo: "🚍" },
@@ -31,9 +40,7 @@ export const generateTrips = (origin: string, destination: string): Trip[] => {
   const durations = ["5h30", "5h45", "5h30", "5h30", "5h15", "5h45", "5h45", "5h30", "5h45"];
   const prices = [54.08, 58.50, 0, 63.88, 69.78, 92.70, 105.46, 112.84, 120.22];
 
-  // Extract city name with terminal info for display
   const getDisplayName = (fullName: string) => {
-    // If it contains a terminal name (after " - "), show "City" format
     const cityPart = fullName.split(",")[0].trim();
     return cityPart;
   };
