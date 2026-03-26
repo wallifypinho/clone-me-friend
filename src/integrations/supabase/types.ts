@@ -110,6 +110,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cidades_ibge: {
+        Row: {
+          codigo_ibge: string
+          created_at: string | null
+          estado: string
+          id: string
+          latitude: number
+          longitude: number
+          nome_cidade: string
+          nome_estado: string
+        }
+        Insert: {
+          codigo_ibge: string
+          created_at?: string | null
+          estado: string
+          id?: string
+          latitude: number
+          longitude: number
+          nome_cidade: string
+          nome_estado: string
+        }
+        Update: {
+          codigo_ibge?: string
+          created_at?: string | null
+          estado?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          nome_cidade?: string
+          nome_estado?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           cpf: string | null
@@ -413,6 +446,54 @@ export type Database = {
         }
         Relationships: []
       }
+      programacoes: {
+        Row: {
+          created_at: string | null
+          destino_id: string | null
+          empresa: string
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          intervalo_minutos: number
+          origem_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          destino_id?: string | null
+          empresa: string
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          intervalo_minutos?: number
+          origem_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          destino_id?: string | null
+          empresa?: string
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          intervalo_minutos?: number
+          origem_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programacoes_destino_id_fkey"
+            columns: ["destino_id"]
+            isOneToOne: false
+            referencedRelation: "cidades_ibge"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programacoes_origem_id_fkey"
+            columns: ["origem_id"]
+            isOneToOne: false
+            referencedRelation: "cidades_ibge"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reservations: {
         Row: {
           arrival_time: string | null
@@ -487,6 +568,45 @@ export type Database = {
           },
         ]
       }
+      rotas_cache: {
+        Row: {
+          created_at: string | null
+          destino_id: string | null
+          distancia_km: number
+          id: string
+          origem_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          destino_id?: string | null
+          distancia_km: number
+          id?: string
+          origem_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          destino_id?: string | null
+          distancia_km?: number
+          id?: string
+          origem_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rotas_cache_destino_id_fkey"
+            columns: ["destino_id"]
+            isOneToOne: false
+            referencedRelation: "cidades_ibge"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rotas_cache_origem_id_fkey"
+            columns: ["origem_id"]
+            isOneToOne: false
+            referencedRelation: "cidades_ibge"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tickets: {
         Row: {
           airline_locator: string | null
@@ -541,6 +661,27 @@ export type Database = {
           seat?: string | null
           status?: string
           ticket_id?: string
+        }
+        Relationships: []
+      }
+      tipos_onibus: {
+        Row: {
+          created_at: string | null
+          fator_preco: number
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string | null
+          fator_preco?: number
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string | null
+          fator_preco?: number
+          id?: string
+          nome?: string
         }
         Relationships: []
       }
