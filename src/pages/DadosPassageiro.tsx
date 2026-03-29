@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, CalendarDays, Clock, Bus, Armchair, Users, DollarSign, User, CreditCard, Mail, Phone } from "lucide-react";
 import { analytics } from "@/lib/analytics";
 import { upsertLead } from "@/lib/entities";
+import { isValidCPF } from "@/lib/cpfValidator";
 
 const DadosPassageiro = () => {
   const [searchParams] = useSearchParams();
@@ -47,7 +48,9 @@ const DadosPassageiro = () => {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
   };
 
-  const isValid = nome.trim().length >= 3 && cpf.replace(/\D/g, "").length === 11 && email.includes("@") && whatsapp.replace(/\D/g, "").length >= 10;
+  const cpfDigits = cpf.replace(/\D/g, "");
+  const cpfIsValid = cpfDigits.length === 11 && isValidCPF(cpfDigits);
+  const isValid = nome.trim().length >= 3 && cpfIsValid && email.includes("@") && whatsapp.replace(/\D/g, "").length >= 10;
 
   useEffect(() => {
     analytics.trackEvent('PassengerInfoStarted', { origin: origem, destination: destino });
@@ -158,8 +161,13 @@ const DadosPassageiro = () => {
                 value={cpf}
                 onChange={(e) => setCpf(formatCPF(e.target.value))}
                 placeholder="000.000.000-00"
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                className={`w-full border rounded-lg px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring ${
+                  cpfDigits.length === 11 && !cpfIsValid ? "border-destructive" : "border-border"
+                }`}
               />
+              {cpfDigits.length === 11 && !cpfIsValid && (
+                <p className="text-xs text-destructive mt-1">CPF inválido. Verifique os dígitos.</p>
+              )}
             </div>
             <div>
               <label className="flex items-center gap-1.5 text-sm font-medium text-foreground mb-1.5">

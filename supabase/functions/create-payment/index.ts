@@ -32,11 +32,12 @@ Deno.serve(async (req) => {
     // Fetch gateway keys from admin_settings
     const { data: keys } = await supabase
       .from("admin_settings").select("key, value")
-      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_api_url"]);
+      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_api_url", "gateway_amount_format"]);
 
     const publicKey = keys?.find((k: any) => k.key === "gateway_public_key")?.value;
     const secretKey = keys?.find((k: any) => k.key === "gateway_secret_key")?.value;
     const gatewayUrl = keys?.find((k: any) => k.key === "gateway_api_url")?.value || "https://api.hurapayments.com.br/v1/payment-transaction/create";
+    const amountFormat = keys?.find((k: any) => k.key === "gateway_amount_format")?.value || "cents";
 
     if (!publicKey || !secretKey) {
       return new Response(
@@ -46,11 +47,12 @@ Deno.serve(async (req) => {
     }
 
     const orderId = `ord_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
-    const amountInCents = Math.round(amount * 100);
+    // Configurable: "cents" sends amount*100, "reais" sends amount as-is
+    const gatewayAmount = amountFormat === "reais" ? amount : Math.round(amount * 100);
     const cpfClean = (customerCpf || "00000000000").replace(/\D/g, "");
 
     const gatewayPayload: Record<string, any> = {
-      amount: amountInCents,
+      amount: gatewayAmount,
       payment_method: paymentMethod === "pix" ? "pix" : "credit_card",
       postback_url: `${supabaseUrl}/functions/v1/payment-webhook`,
       customer: {
@@ -61,7 +63,7 @@ Deno.serve(async (req) => {
       },
       items: [{
         title: `Passagem ${bookingCode}`,
-        unit_price: amountInCents, quantity: 1, tangible: false,
+        unit_price: gatewayAmount, quantity: 1, tangible: false,
       }],
       metadata: {
         booking_code: bookingCode, order_id: orderId,
