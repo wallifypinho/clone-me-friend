@@ -131,10 +131,11 @@ Deno.serve(async (req) => {
     }
 
     if (!gwResponse) {
+      await supabase.from("integration_logs").insert({
         provider: "duttyfy",
         action: "create_payment",
         request_payload: duttyfyPayload,
-        error_message: String(fetchErr),
+        error_message: "All auth strategies failed",
         order_id: orderId,
       });
 
