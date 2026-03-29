@@ -55,8 +55,6 @@ const Confirmacao = () => {
     }
     analytics.trackEvent('ReservationViewed', { reservation_code: code, origin: origem, destination: destino, amount: total });
 
-    // Lead event removed here — already fired in DadosPassageiro to avoid duplicate
-
     // Update booking with gateway_transaction_id (booking was created in Pagamento)
     if (transactionId) {
       supabase.from("bookings")
@@ -75,7 +73,8 @@ const Confirmacao = () => {
     });
   }, []);
 
-  // Poll payment status and fire Purchase event for UTMify/Pixel when confirmed
+  // Poll payment status and fire Purchase event for browser pixel when confirmed
+  // Uses purchase_event_id from orders table for deduplication with CAPI
   const purchaseFiredRef = useRef(false);
   useEffect(() => {
     if (!transactionId || paymentMethod !== 'pix' || purchaseFiredRef.current) return;
@@ -84,7 +83,7 @@ const Confirmacao = () => {
       try {
         const { data: orderData } = await supabase
           .from('orders')
-          .select('payment_status, paid_at')
+          .select('payment_status, paid_at, purchase_event_id')
           .eq('gateway_transaction_id', transactionId)
           .maybeSingle();
 
@@ -94,7 +93,11 @@ const Confirmacao = () => {
           clearInterval(pollInterval);
 
           const attrData = analytics.getAttributionData();
-          const paidPayload = {
+
+          // Use the same event_id from CAPI (webhook) for deduplication
+          const purchaseEventId = (orderData as any)?.purchase_event_id || undefined;
+
+          const paidPayload: Record<string, any> = {
             value: total,
             currency: 'BRL',
             content_name: `${origem} → ${destino}`,
@@ -112,13 +115,21 @@ const Confirmacao = () => {
             utm_content: attrData?.utm_content || null,
             utm_term: attrData?.utm_term || null,
             fbclid: attrData?.fbclid || null,
+            fbc: attrData?.fbc || null,
+            fbp: attrData?.fbp || null,
             campaign_name: attrData?.campaign_name || null,
             campaign_id: attrData?.campaign_id || null,
           };
 
-          // Purchase = conversão real para UTMify/Pixel
+          // If webhook already sent CAPI with a specific event_id, use the same one
+          // for browser pixel deduplication
+          if (purchaseEventId) {
+            paidPayload.event_id = purchaseEventId;
+          }
+
+          // Purchase = conversão real para pixel (deduped with CAPI via event_id)
           analytics.trackEvent('Purchase', paidPayload);
-          // OrderPaid = evento interno de análise
+          // OrderPaid = evento interno de análise (DB only)
           analytics.trackEvent('OrderPaid', paidPayload);
           analytics.updateScore('PURCHASE_COMPLETED');
 
@@ -127,7 +138,7 @@ const Confirmacao = () => {
       } catch (err) {
         console.error("Poll error:", err);
       }
-    }, 5000); // Poll every 5 seconds
+    }, 5000);
 
     // Stop polling after 30 minutes
     const timeout = setTimeout(() => clearInterval(pollInterval), 30 * 60 * 1000);

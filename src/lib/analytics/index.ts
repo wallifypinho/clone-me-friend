@@ -17,21 +17,24 @@ import type { SCORE_VALUES } from './constants';
 // Standard FB events that use 'track' instead of 'trackCustom'
 const STANDARD_FB_EVENTS = new Set([
   'PageView', 'ViewContent', 'Search', 'Lead',
-  'InitiateCheckout', 'AddPaymentInfo', 'Purchase',
+  'AddToCart', 'InitiateCheckout', 'AddPaymentInfo', 'Purchase',
 ]);
 
 // Custom events that should be sent to Meta pixel as trackCustom (for audiences/analysis)
 const META_CUSTOM_EVENTS = new Set([
   'PixViewed', 'PixCopied', 'ReservationViewed',
-  'PaymentScreenViewed', 'CheckoutAbandoned', 'CheckoutResumed',
+  'PaymentScreenViewed', 'PaymentGenerated', 'PaymentPending',
+  'CheckoutAbandoned', 'CheckoutResumed',
 ]);
 
 // Internal-only events: saved to DB but NOT sent to Meta pixel
-// (OrderCreated, ReservationCreated, PaymentLinkGenerated, OrderPaid, etc.)
+// (OrderCreated, ReservationCreated, PaymentLinkGenerated, OrderPaid,
+//  RouteSelected, SeatConfirmed, PassengerInfoStarted, PassengerInfoCompleted,
+//  TicketDownloaded, PurchaseConfirmed)
 
 // Critical events to queue for server-side CAPI
 const CAPI_EVENTS = new Set([
-  'Purchase', 'Lead', 'InitiateCheckout', 'AddPaymentInfo',
+  'Purchase', 'Lead', 'InitiateCheckout', 'AddPaymentInfo', 'AddToCart',
 ]);
 
 let initialized = false;
@@ -62,6 +65,8 @@ function getJourneyChain(): Record<string, any> {
     utm_term: attr?.utm_term || null,
     fbclid: attr?.fbclid || null,
     gclid: attr?.gclid || null,
+    fbc: attr?.fbc || null,
+    fbp: attr?.fbp || null,
     campaign_name: attr?.campaign_name || null,
     campaign_id: attr?.campaign_id || null,
     adset_name: attr?.adset_name || null,
@@ -100,7 +105,7 @@ export const analytics = {
 
     updateLastInteraction();
 
-    const eventId = generateEventId();
+    const eventId = params.event_id || generateEventId();
     const isStandard = STANDARD_FB_EVENTS.has(eventName);
     const isMetaCustom = META_CUSTOM_EVENTS.has(eventName);
 
@@ -120,7 +125,7 @@ export const analytics = {
     // Queue for CAPI if critical (standard conversion events only)
     if (CAPI_EVENTS.has(eventName)) {
       const leadData = this.getLeadData();
-      queueServerEvent(eventName, eventId, leadData, enriched);
+      queueServerEvent(eventName, eventId, { ...leadData, fbc: enriched.fbc, fbp: enriched.fbp }, enriched);
     }
   },
 

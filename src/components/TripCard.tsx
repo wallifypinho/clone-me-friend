@@ -13,12 +13,20 @@ const TripCard = ({ trip }: TripCardProps) => {
 
   const handleSelect = () => {
     if (trip.soldOut) return;
+    // Internal event
     analytics.trackEvent('RouteSelected', {
       origin: trip.origin, destination: trip.destination, company: trip.company,
       price: trip.discountedPrice, seat_type: trip.seatType,
     });
+    // Standard Meta event: AddToCart (user selected a trip/fare)
+    analytics.trackEvent('AddToCart', {
+      content_name: `${trip.origin} → ${trip.destination}`,
+      content_type: 'trip',
+      value: trip.discountedPrice,
+      currency: 'BRL',
+      content_ids: [`${trip.company}-${trip.seatType}-${trip.departure}`],
+    });
     analytics.updateScore('ROUTE_SELECTED');
-    // Pass full origin/destination from URL params (not truncated trip names)
     const params = new URLSearchParams({
       origem: searchParams.get("origem") || trip.origin,
       destino: searchParams.get("destino") || trip.destination,
@@ -32,10 +40,10 @@ const TripCard = ({ trip }: TripCardProps) => {
     });
     navigate(`/selecionar-assento?${params.toString()}`);
   };
+
   return (
     <div className={`bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${trip.soldOut ? "opacity-60" : ""}`}>
       <div className="p-5">
-        {/* Company */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className="text-2xl">{trip.companyLogo}</span>
@@ -43,13 +51,11 @@ const TripCard = ({ trip }: TripCardProps) => {
           </div>
         </div>
 
-        {/* Timeline */}
         <div className="flex items-center justify-between mb-1">
           <div className="text-center">
             <p className="text-2xl font-bold text-foreground">{trip.departure}</p>
             <p className="text-xs text-muted-foreground">{trip.origin}</p>
           </div>
-
           <div className="flex-1 mx-4 flex flex-col items-center">
             <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
               <Clock className="w-3 h-3" />
@@ -61,7 +67,6 @@ const TripCard = ({ trip }: TripCardProps) => {
               <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
             </div>
           </div>
-
           <div className="text-center">
             <p className="text-2xl font-bold text-foreground">{trip.arrival}</p>
             <p className="text-xs text-muted-foreground">{trip.destination}</p>
@@ -69,7 +74,6 @@ const TripCard = ({ trip }: TripCardProps) => {
         </div>
       </div>
 
-      {/* Bottom bar */}
       <div className="border-t border-border px-5 py-3 flex items-center justify-between bg-muted/30">
         <div className="flex items-center gap-3">
           <span className="text-sm text-foreground font-medium">{trip.seatType}</span>
@@ -100,7 +104,6 @@ const TripCard = ({ trip }: TripCardProps) => {
         )}
       </div>
 
-      {/* Seats left warning */}
       {trip.seatsLeft && !trip.soldOut && (
         <div className="px-5 py-2 bg-accent/50 flex items-center gap-2">
           <Flame className="w-4 h-4 text-destructive" />

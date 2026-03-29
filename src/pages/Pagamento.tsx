@@ -32,7 +32,6 @@ const Pagamento = () => {
     if (!method) return;
     setLoading(true);
     analytics.trackEvent('AddPaymentInfo', { value: total, currency: 'BRL', payment_type: method });
-    analytics.trackEvent('PaymentLinkGenerated', { payment_type: method, amount: total, currency: 'BRL' });
     analytics.updateScore('PAYMENT_LINK_GENERATED');
 
     try {
@@ -109,6 +108,8 @@ const Pagamento = () => {
         utm_term: attrData?.utm_term || null,
         fbclid: attrData?.fbclid || null,
         gclid: attrData?.gclid || null,
+        fbc: attrData?.fbc || null,
+        fbp: attrData?.fbp || null,
         campaign_name: attrData?.campaign_name || null,
         campaign_id: attrData?.campaign_id || null,
         adset_name: attrData?.adset_name || null,
@@ -125,7 +126,7 @@ const Pagamento = () => {
       analytics.identifyLead({
         nome, cpf, email, whatsapp: whatsapp || undefined,
         reservation_code: bookingCode,
-        order_id: undefined, // will be set after payment response
+        order_id: undefined,
       });
 
       const { data, error } = await supabase.functions.invoke("create-payment", {
@@ -155,13 +156,34 @@ const Pagamento = () => {
         return;
       }
 
-      console.log("AnubisPay response:", data);
+      console.log("Gateway response:", data);
 
       // Store order_id in lead chain for auto-enrichment
       const orderId = data?.order_id || bookingCode;
       analytics.identifyLead({ order_id: orderId, reservation_code: bookingCode });
 
-      // ── Track OrderCreated + ReservationCreated (geração, NÃO conversão) ──
+      // PaymentGenerated: custom Meta event — payment/PIX was generated
+      analytics.trackEvent('PaymentGenerated', {
+        reservation_code: bookingCode,
+        order_id: orderId,
+        transaction_id: data?.transaction_id || null,
+        amount: total,
+        currency: 'BRL',
+        payment_method: method,
+        origin: origem,
+        destination: destino,
+      });
+
+      // PaymentPending: custom Meta event — awaiting payment
+      analytics.trackEvent('PaymentPending', {
+        reservation_code: bookingCode,
+        order_id: orderId,
+        amount: total,
+        currency: 'BRL',
+        payment_method: method,
+      });
+
+      // Internal-only events (DB only, no Meta pixel)
       analytics.trackEvent('OrderCreated', {
         reservation_code: bookingCode,
         order_id: orderId,
