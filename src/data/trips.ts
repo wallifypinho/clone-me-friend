@@ -58,6 +58,9 @@ export const generateTrips = (origin: string, destination: string): Trip[] => {
     const arrH = (depH + durHours + Math.floor((depM + durMins) / 60)) % 24;
     const arrM = (depM + durMins) % 60;
 
+    const rawPrice = prices[i];
+    const safePrice = rawPrice > 0 ? Math.max(rawPrice, ABSOLUTE_MIN_PRICE) : 0;
+
     return {
       company: c.name,
       companyLogo: c.logo,
@@ -67,8 +70,8 @@ export const generateTrips = (origin: string, destination: string): Trip[] => {
       origin: originCity,
       destination: destCity,
       seatType: seatTypes[i],
-      originalPrice: prices[i],
-      discountedPrice: prices[i] ? prices[i] / 2 : 0,
+      originalPrice: safePrice,
+      discountedPrice: safePrice > 0 ? applyCommercialRounding(safePrice / 2) : 0,
       seatsLeft: i === 0 ? 5 : i === 1 ? 9 : i === 4 ? 4 : i === 6 ? 5 : undefined,
       soldOut: i === 2,
     };
