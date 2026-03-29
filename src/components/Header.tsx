@@ -9,7 +9,7 @@ const Header = () => {
     <header className="sticky top-0 z-50 bg-background border-b border-border">
       <div className="container flex items-center justify-between h-16">
         <Link to="/" className="flex items-center">
-          <img src="/images/logo.png" alt="ClickBus" className="h-10 w-auto" />
+          <img src="/images/logo.png" alt="RotaCerta" className="h-10 w-auto" />
         </Link>
 
         {/* Desktop nav */}
