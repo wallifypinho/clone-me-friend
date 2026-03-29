@@ -96,11 +96,31 @@ Deno.serve(async (req) => {
       utm: utmParts || orderId,
     };
 
-    // Debug: log URL length, first 40 chars, last 8 chars
+    // Enhanced debug logging (safe — no full secrets exposed)
     const urlSuffix = duttyfyUrl.slice(-8);
     const urlPrefix = duttyfyUrl.substring(0, 40);
-    console.log(`[create-payment] URL debug: len=${duttyfyUrl.length}, starts="${urlPrefix}", ends="...${urlSuffix}"`);
-    console.log(`[create-payment] DuttyFy request for ${bookingCode}:`, JSON.stringify(duttyfyPayload).substring(0, 500));
+    const urlHasWhitespace = duttyfyUrl !== duttyfyUrl.trim();
+    const urlHasNewline = /[\r\n]/.test(duttyfyUrl);
+    const urlHasQuotes = /["']/.test(duttyfyUrl);
+    const urlEndsWithSlash = duttyfyUrl.endsWith("/");
+    const urlContainsApiPix = duttyfyUrl.includes("/api-pix/");
+    const urlProtocol = duttyfyUrl.startsWith("https://") ? "https" : duttyfyUrl.startsWith("http://") ? "http" : "unknown";
+    const urlCharCodes = Array.from(duttyfyUrl.slice(-12)).map(c => c.charCodeAt(0));
+    
+    console.log(`[create-payment] URL diagnostics: {
+  len: ${duttyfyUrl.length},
+  prefix: "${urlPrefix}",
+  suffix: "...${urlSuffix}",
+  protocol: "${urlProtocol}",
+  hasApiPix: ${urlContainsApiPix},
+  hasWhitespace: ${urlHasWhitespace},
+  hasNewline: ${urlHasNewline},
+  hasQuotes: ${urlHasQuotes},
+  endsWithSlash: ${urlEndsWithSlash},
+  lastCharCodes: [${urlCharCodes.join(",")}]
+}`);
+    console.log(`[create-payment] Payload for ${bookingCode}: amount=${duttyfyPayload.amount} (cents), doc=${cpfClean.length}digits, phone=${phoneClean.length}digits, method=${duttyfyPayload.paymentMethod}`);
+    console.log(`[create-payment] Full request body:`, JSON.stringify(duttyfyPayload).substring(0, 600));
 
     // DuttyFy: NO auth headers — the encrypted URL IS the credential
     let gwResponse: Response;
