@@ -1,5 +1,6 @@
 import { CidadeBrasil, findCityByDisplay, findCityByName } from "@/data/cidadesBrasil";
 import type { Trip } from "@/data/trips";
+import { getFinalFare, ABSOLUTE_MIN_PRICE, applyCommercialRounding } from "@/lib/pricing";
 
 // ─── Haversine ───────────────────────────────────────────────
 const EARTH_RADIUS_KM = 6371;
