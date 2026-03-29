@@ -1,4 +1,5 @@
 import { generateDynamicTrips } from "@/lib/routeCalculator";
+import { ABSOLUTE_MIN_PRICE, applyCommercialRounding } from "@/lib/pricing";
 
 export interface Trip {
   company: string;
