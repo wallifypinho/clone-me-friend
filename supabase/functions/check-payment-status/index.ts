@@ -50,11 +50,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Fallback: query DuttyFy status endpoint
-    const duttyfyApiKey = Deno.env.get("DUTTYFY_API_KEY");
-    const duttyfyStatusUrl = Deno.env.get("DUTTYFY_STATUS_URL");
+    // 2. Fallback: query DuttyFy via encrypted URL (GET with ?transactionId=)
+    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL");
 
-    if (!duttyfyApiKey || !duttyfyStatusUrl) {
+    if (!duttyfyUrl) {
       return new Response(
         JSON.stringify({ status: order?.payment_status || "unknown", source: "database_only" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -62,13 +61,10 @@ Deno.serve(async (req) => {
     }
 
     try {
-      const statusEndpoint = `${duttyfyStatusUrl}?transactionId=${encodeURIComponent(transactionId)}`;
+      const statusEndpoint = `${duttyfyUrl}?transactionId=${encodeURIComponent(transactionId)}`;
       const gwRes = await fetch(statusEndpoint, {
         method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${duttyfyApiKey}`,
-        },
+        headers: { "Accept": "application/json" },
       });
 
       const gwResponseText = await gwRes.text();
