@@ -1,6 +1,10 @@
 import { CidadeBrasil, findCityByDisplay, findCityByName } from "@/data/cidadesBrasil";
 import type { Trip } from "@/data/trips";
 import { getFinalFare, ABSOLUTE_MIN_PRICE, applyCommercialRounding } from "@/lib/pricing";
+import { getAvailableCompaniesSync, preloadCompanyData, type EligibleCompany } from "@/lib/companyRouting";
+
+// Pre-warm company cache on module load
+preloadCompanyData();
 
 // ─── Haversine ───────────────────────────────────────────────
 const EARTH_RADIUS_KM = 6371;
@@ -67,23 +71,9 @@ export function formatDuration(minutes: number): string {
   return `${h}h${m > 0 ? String(m).padStart(2, "0") : "00"}`;
 }
 
-// ─── Preço dinâmico (delegado ao motor de precificação v2) ───
-interface BusCompany {
-  name: string;
-  logo: string;
-}
-
-const COMPANIES: BusCompany[] = [
-  { name: "Andorinha", logo: "🚌" },
-  { name: "Caiçara", logo: "🚍" },
-  { name: "Viação Garcia", logo: "🚎" },
-  { name: "Brasil Sul", logo: "🚐" },
-  { name: "Kaissara", logo: "🚌" },
-  { name: "Águia Branca", logo: "🚍" },
-  { name: "Auto Viação 1001", logo: "🚎" },
-  { name: "Boa Esperança", logo: "🚐" },
-  { name: "Catedral Turismo", logo: "🚌" },
-];
+// ─── Companhias (delegado ao Company Routing Engine) ─────────
+// A lista estática COMPANIES foi removida.
+// Agora usa getAvailableCompaniesSync() do companyRouting.ts
 
 // ─── Geração de horários ─────────────────────────────────────
 function generateDepartures(distKm: number): string[] {
@@ -143,18 +133,22 @@ export function generateDynamicTrips(originStr: string, destStr: string): Trip[]
   const departures = generateDepartures(distKm);
   const seatTypes = getSeatTypes(distKm);
 
+  // Obter companhias elegíveis via Company Routing Engine
+  const eligibleCompanies = getAvailableCompaniesSync(originStr, destStr);
+  // Fallback: se nenhuma companhia elegível, não gerar viagens
+  if (eligibleCompanies.length === 0) return [];
+
   const trips: Trip[] = [];
 
   // Gerar combinações empresa × horário × tipo de assento
-  // Limitar para não ter excesso
   const maxTrips = 12;
   let count = 0;
 
   for (const dep of departures) {
     if (count >= maxTrips) break;
 
-    // Selecionar empresa (rotacionar)
-    const company = COMPANIES[count % COMPANIES.length];
+    // Selecionar empresa elegível (rotacionar)
+    const company = eligibleCompanies[count % eligibleCompanies.length];
     // Selecionar tipo de assento (rotacionar)
     const seatType = seatTypes[count % seatTypes.length];
 
