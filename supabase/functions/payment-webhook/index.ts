@@ -9,7 +9,7 @@ const corsHeaders = {
 function normalizeStatus(rawStatus: string): string {
   const s = (rawStatus || "").toUpperCase().trim();
   const map: Record<string, string> = {
-    PAID: "paid", APPROVED: "paid", CONFIRMED: "paid", CAPTURED: "paid",
+    PAID: "paid", APPROVED: "paid", CONFIRMED: "paid", CAPTURED: "paid", COMPLETED: "paid",
     PENDING: "pending", WAITING_PAYMENT: "pending",
     PROCESSING: "processing", IN_ANALYSIS: "processing",
     FAILED: "failed", DECLINED: "failed", REFUSED: "failed", ERROR: "failed",
@@ -51,11 +51,13 @@ Deno.serve(async (req) => {
 
     console.log("[webhook] Received:", JSON.stringify(payload).substring(0, 1000));
 
+    // DuttyFy sends: { transactionId, status, paidAt?, ... }
+    // Also support generic: { data: { Id, Status } }
     const data = payload?.data || payload;
-    const gatewayTxId = data?.Id || data?.id || data?.transaction_id || data?.TransactionId || "";
-    const rawStatus = data?.Status || data?.status || payload?.Status || payload?.status || "";
+    const gatewayTxId = data?.transactionId || data?.transaction_id || data?.Id || data?.id || data?.TransactionId || "";
+    const rawStatus = data?.status || data?.Status || payload?.status || payload?.Status || "";
     const normalizedStatus = normalizeStatus(rawStatus);
-    const paidAt = data?.PaidAt || data?.paid_at || data?.paidAt || null;
+    const paidAt = data?.paidAt || data?.PaidAt || data?.paid_at || null;
 
     if (!gatewayTxId) {
       console.warn("[webhook] No transaction ID found in payload");
@@ -64,7 +66,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Generate unique event_id for deduplication with browser pixel
+    // Log webhook to integration_logs
+    await supabase.from("integration_logs").insert({
+      provider: "duttyfy",
+      action: "webhook_received",
+      request_payload: payload,
+      transaction_id: gatewayTxId,
+      status_code: 200,
+    });
+
+    // Generate unique event_id for deduplication
     const eventId = `wh_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
 
     // Check for duplicate
@@ -108,6 +119,19 @@ Deno.serve(async (req) => {
       .update({ order_id: order.order_id, processed_at: new Date().toISOString() })
       .eq("event_id", eventId);
 
+    // Update payment_transactions
+    const txUpdate: Record<string, any> = {
+      status_external: rawStatus,
+      status_internal: normalizedStatus === "paid" ? "paid" : normalizedStatus === "pending" ? "waiting_payment" : normalizedStatus,
+      updated_at: new Date().toISOString(),
+    };
+    if (normalizedStatus === "paid") {
+      txUpdate.paid_at = paidAt ? new Date(paidAt).toISOString() : new Date().toISOString();
+    }
+    await supabase.from("payment_transactions")
+      .update(txUpdate)
+      .eq("transaction_id", gatewayTxId);
+
     // Update order status
     const orderUpdate: Record<string, any> = {
       payment_status: normalizedStatus,
@@ -115,7 +139,6 @@ Deno.serve(async (req) => {
     };
     if (normalizedStatus === "paid") {
       orderUpdate.paid_at = paidAt ? new Date(paidAt).toISOString() : new Date().toISOString();
-      // Store purchase_event_id for browser pixel deduplication
       orderUpdate.purchase_event_id = eventId;
     }
 
@@ -131,7 +154,7 @@ Deno.serve(async (req) => {
       await supabase.from("bookings").update(bookingUpdate).eq("code", order.reservation_code);
     }
 
-    // === PAYMENT CONFIRMED ===
+    // === PAYMENT CONFIRMED (COMPLETED) ===
     if (normalizedStatus === "paid") {
       console.log(`[webhook] Payment confirmed for order ${order.order_id}`);
 
@@ -157,7 +180,7 @@ Deno.serve(async (req) => {
         status: "issued", issued_at: new Date().toISOString(),
       });
 
-      // PurchaseConfirmed conversion event in visitor_events
+      // PurchaseConfirmed in visitor_events
       await supabase.from("visitor_events").insert({
         event_id: eventId, session_id: order.session_id || null,
         visitor_id: order.visitor_id || null,
@@ -169,12 +192,12 @@ Deno.serve(async (req) => {
           paid_at: orderUpdate.paid_at, payment_method: order.payment_method,
           utm_source: order.utm_source, fbclid: order.fbclid,
           campaign_name: order.campaign_name, ticket_id: ticketId,
-          confirmed_via: "webhook",
+          confirmed_via: "webhook", provider: "duttyfy",
         },
         buyer_score: order.buyer_score || 0, buyer_stage: "comprador",
       });
 
-      // === META CAPI Purchase (server-side, same event_id for dedup) ===
+      // === META CAPI Purchase ===
       const metaToken = Deno.env.get("META_CAPI_TOKEN");
       if (metaToken) {
         try {
@@ -189,7 +212,6 @@ Deno.serve(async (req) => {
             userData.fn = [await sha256(names[0])];
             if (names.length > 1) userData.ln = [await sha256(names[names.length - 1])];
           }
-          // Use stored _fbc and _fbp for better matching
           if (order.fbc) userData.fbc = order.fbc;
           else if (order.fbclid) userData.fbc = `fb.1.${Date.now()}.${order.fbclid}`;
           if (order.fbp) userData.fbp = order.fbp;
@@ -201,7 +223,7 @@ Deno.serve(async (req) => {
             data: [{
               event_name: "Purchase",
               event_time: Math.floor(Date.now() / 1000),
-              event_id: eventId, // Same event_id stored in orders.purchase_event_id
+              event_id: eventId,
               action_source: "website",
               user_data: userData,
               custom_data: {
@@ -219,6 +241,17 @@ Deno.serve(async (req) => {
           );
           const capiResult = await capiRes.text();
           console.log("[webhook] CAPI Purchase sent:", capiResult.substring(0, 300));
+
+          // Log CAPI call
+          await supabase.from("integration_logs").insert({
+            provider: "meta_capi",
+            action: "purchase_event",
+            request_payload: capiPayload,
+            response_payload: { raw: capiResult.substring(0, 2000) },
+            status_code: capiRes.status,
+            transaction_id: gatewayTxId,
+            order_id: order.order_id,
+          });
         } catch (capiErr) {
           console.error("[webhook] CAPI error:", capiErr);
         }
