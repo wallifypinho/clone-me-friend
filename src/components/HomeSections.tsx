@@ -19,7 +19,7 @@ const testimonials = [
     city: "Belo Horizonte, MG",
   },
   {
-    text: "Preços imbatíveis e pagamento fácil pelo PIX. A confirmação é instantânea. Viajo sempre pela ClickBus!",
+    text: "Preços imbatíveis e pagamento fácil pelo PIX. A confirmação é instantânea. Viajo sempre pela RotaCerta!",
     name: "Juliana R.",
     city: "Curitiba, PR",
   },
@@ -74,7 +74,7 @@ const HomeSections = () => {
       {/* Trust */}
       <section className="py-16 bg-muted">
         <div className="container">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Por Que Escolher a ClickBus?</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Por Que Escolher a RotaCerta?</h2>
           <p className="text-muted-foreground mb-8">
             Somos referência em venda de passagens de ônibus online no Brasil.
           </p>
@@ -96,7 +96,7 @@ const HomeSections = () => {
       <footer className="py-8 border-t border-border">
         <div className="container text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} ClickBus — Todos os direitos reservados
+            © {new Date().getFullYear()} RotaCerta — Todos os direitos reservados
           </p>
         </div>
       </footer>

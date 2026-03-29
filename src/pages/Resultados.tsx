@@ -125,7 +125,7 @@ const Resultados = () => {
           </Link>
 
           <Link to="/">
-            <img src="/images/logo.png" alt="ClickBus" className="h-8" />
+            <img src="/images/logo.png" alt="RotaCerta" className="h-8" />
           </Link>
 
           <div className="flex-1 flex flex-wrap items-center gap-2">
