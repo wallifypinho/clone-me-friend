@@ -93,25 +93,44 @@ Deno.serve(async (req) => {
 
     console.log(`[create-payment] DuttyFy request for ${bookingCode}:`, JSON.stringify(duttyfyPayload).substring(0, 500));
 
-    // Call DuttyFy API
-    let gwResponse: Response;
-    let gwResponseText: string;
-    try {
-      gwResponse = await fetch(duttyfyUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${duttyfyApiKey}`,
-        },
-        body: JSON.stringify(duttyfyPayload),
-      });
-      gwResponseText = await gwResponse.text();
-      console.log(`[create-payment] DuttyFy response status=${gwResponse.status}: ${gwResponseText.substring(0, 500)}`);
-    } catch (fetchErr) {
-      console.error("[create-payment] DuttyFy fetch error:", fetchErr);
+    // DuttyFy encrypted URL may already contain auth — try multiple strategies
+    const authStrategies = [
+      { name: "No auth (encrypted URL)", headers: {} },
+      { name: "Bearer API Key", headers: { "Authorization": `Bearer ${duttyfyApiKey}` } },
+      { name: "x-api-key", headers: { "x-api-key": duttyfyApiKey } },
+      { name: "x-access-token", headers: { "x-access-token": duttyfyApiKey } },
+    ];
 
-      // Log the error
-      await supabase.from("integration_logs").insert({
+    let gwResponse: Response | null = null;
+    let gwResponseText = "";
+    let usedStrategy = "";
+
+    for (const strategy of authStrategies) {
+      console.log(`[create-payment] Trying auth: ${strategy.name}`);
+      try {
+        gwResponse = await fetch(duttyfyUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...strategy.headers,
+          },
+          body: JSON.stringify(duttyfyPayload),
+        });
+        gwResponseText = await gwResponse.text();
+        usedStrategy = strategy.name;
+        console.log(`[create-payment] ${strategy.name} => status=${gwResponse.status}: ${gwResponseText.substring(0, 500)}`);
+        
+        // If we get something other than 401/403/500, use this response
+        if (gwResponse.status !== 401 && gwResponse.status !== 403 && gwResponse.status !== 500) break;
+        // If 500 but with data, might be a real error - continue trying
+        if (gwResponse.ok) break;
+      } catch (fetchErr) {
+        console.error(`[create-payment] ${strategy.name} fetch error:`, fetchErr);
+        continue;
+      }
+    }
+
+    if (!gwResponse) {
         provider: "duttyfy",
         action: "create_payment",
         request_payload: duttyfyPayload,
