@@ -340,104 +340,119 @@ const AdminPanel = () => {
           </>
         )}
 
-        {/* ===== GATEWAY DE PAGAMENTO ===== */}
+        {/* ===== GATEWAY DE PAGAMENTO — DuttyFy ===== */}
         {tab === "gateway" && (
           <div className="space-y-4">
             <div className="bg-card border border-border rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-foreground flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-primary" /> Gateway de Pagamento
+                  <CreditCard className="w-5 h-5 text-primary" /> Gateway DuttyFy PIX
                 </h3>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${gatewayActive ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"}`}>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${gatewayActive ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}`}>
                   {gatewayActive ? "Ativo" : "Inativo"}
                 </span>
               </div>
 
-              {/* Gateway Selector */}
-              <div className="mb-5">
-                <label className="text-sm font-medium text-foreground mb-2 block">Escolha o Gateway</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {(["hurapay", "anubispay"] as const).map((provider) => (
-                    <button
-                      key={provider}
-                      onClick={() => setGatewayProvider(provider)}
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
-                        gatewayProvider === provider
-                          ? "border-primary bg-accent/30"
-                          : "border-border bg-card hover:border-primary/50"
-                      }`}
-                    >
-                      <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                        <CreditCard className="w-4 h-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm text-foreground">{GATEWAY_CONFIG[provider].name}</p>
-                        <p className="text-xs text-muted-foreground">{GATEWAY_CONFIG[provider].description}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-muted/50 border border-border rounded-lg p-3 mb-5">
+              <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">API:</span>{" "}
-                  <span className="font-mono">{GATEWAY_CONFIG[gatewayProvider].apiUrl}</span>
+                  <span className="font-semibold text-foreground">Provider:</span> DuttyFy PIX<br/>
+                  <span className="font-semibold text-foreground">Credenciais:</span> Configuradas via variáveis de ambiente seguras (DUTTYFY_API_KEY, DUTTYFY_ENCRYPTED_URL, DUTTYFY_STATUS_URL)
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Public Key</label>
-                  <input
-                    type="text"
-                    value={gatewayPublicKey}
-                    onChange={(e) => setGatewayPublicKey(e.target.value)}
-                    placeholder={GATEWAY_CONFIG[gatewayProvider].pkPlaceholder}
-                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">Secret Key</label>
-                  <input
-                    type="password"
-                    value={gatewaySecretKey}
-                    onChange={(e) => setGatewaySecretKey(e.target.value)}
-                    placeholder={GATEWAY_CONFIG[gatewayProvider].skPlaceholder}
-                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
+              <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">Webhook URL:</span>{" "}
+                  <span className="font-mono text-foreground break-all">{`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payment-webhook`}</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Configure esta URL no painel da DuttyFy para receber notificações de pagamento.</p>
               </div>
 
-              <div className="flex gap-2 mt-5">
-                <button
-                  onClick={saveGateway}
-                  disabled={gatewayLoading || !gatewayPublicKey.trim() || !gatewaySecretKey.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" /> {gatewayActive ? "Atualizar Chaves" : "Salvar e Ativar"}
-                </button>
-                {gatewayActive && (
-                  <button
-                    onClick={removeGateway}
-                    disabled={gatewayLoading}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 border border-destructive text-destructive rounded-lg text-sm font-semibold hover:bg-destructive/10 disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4" /> Remover
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={fetchGatewaySettings}
+                disabled={gatewayLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${gatewayLoading ? "animate-spin" : ""}`} /> Atualizar Dados
+              </button>
+            </div>
+
+            {/* Recent Transactions */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <h4 className="font-semibold text-sm text-foreground mb-3">Transações Recentes</h4>
+              {recentTxns.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhuma transação encontrada</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 px-2 text-muted-foreground">Order</th>
+                        <th className="text-left py-2 px-2 text-muted-foreground">Transaction</th>
+                        <th className="text-left py-2 px-2 text-muted-foreground">Valor</th>
+                        <th className="text-left py-2 px-2 text-muted-foreground">Status</th>
+                        <th className="text-left py-2 px-2 text-muted-foreground">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentTxns.map((tx: any) => (
+                        <tr key={tx.id} className="border-b border-border">
+                          <td className="py-2 px-2 font-mono">{tx.order_id?.substring(0, 15) || "-"}</td>
+                          <td className="py-2 px-2 font-mono">{tx.transaction_id?.substring(0, 15) || "-"}</td>
+                          <td className="py-2 px-2">R$ {Number(tx.amount).toFixed(2).replace(".", ",")}</td>
+                          <td className="py-2 px-2">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                              tx.status_internal === "paid" ? "bg-accent text-accent-foreground" :
+                              tx.status_internal === "waiting_payment" ? "bg-muted text-muted-foreground" :
+                              "bg-destructive/10 text-destructive"
+                            }`}>{tx.status_internal}</span>
+                          </td>
+                          <td className="py-2 px-2">
+                            {tx.transaction_id && tx.status_internal !== "paid" && (
+                              <button onClick={() => recheckPayment(tx.transaction_id)} className="text-primary text-[10px] font-semibold hover:underline">
+                                Reconsultar
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Recent Integration Logs */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <h4 className="font-semibold text-sm text-foreground mb-3">Logs de Integração</h4>
+              {recentLogs.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhum log encontrado</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {recentLogs.map((log: any) => (
+                    <div key={log.id} className="bg-muted/50 border border-border rounded-lg p-2 text-xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-foreground">{log.action}</span>
+                        <span className="text-muted-foreground">{new Date(log.created_at).toLocaleString("pt-BR")}</span>
+                      </div>
+                      {log.error_message && <p className="text-destructive">{log.error_message}</p>}
+                      {log.transaction_id && <p className="text-muted-foreground font-mono">tx: {log.transaction_id}</p>}
+                      {log.status_code && <p className="text-muted-foreground">HTTP {log.status_code}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="bg-card border border-border rounded-xl p-5">
               <h4 className="font-semibold text-sm text-foreground mb-2">ℹ️ Como funciona</h4>
               <ul className="text-xs text-muted-foreground space-y-1.5 list-disc list-inside">
-                <li>Escolha entre <strong>HuraPay</strong> ou <strong>AnubisPay</strong> como gateway</li>
-                <li>A URL da API é configurada automaticamente ao selecionar o gateway</li>
-                <li>As chaves são armazenadas de forma segura no banco de dados</li>
-                <li>Ao ativar, os pagamentos via PIX e Cartão serão processados pelo gateway selecionado</li>
-                <li>Você pode trocar de gateway, alterar chaves ou desativar a qualquer momento</li>
-                <li>Sem gateway ativo, os pedidos serão registrados como "pendente" para confirmação manual</li>
+                <li>Gateway <strong>DuttyFy PIX</strong> configurado via variáveis de ambiente seguras</li>
+                <li>Credenciais nunca expostas no frontend</li>
+                <li>Webhook recebe notificações PENDING e COMPLETED da DuttyFy</li>
+                <li>Consulta de status funciona como fallback caso webhook não chegue</li>
+                <li>Purchase só é disparado após confirmação real (COMPLETED)</li>
+                <li>Todos os eventos são logados em <strong>payment_transactions</strong> e <strong>integration_logs</strong></li>
               </ul>
             </div>
           </div>
