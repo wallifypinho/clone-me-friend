@@ -79,6 +79,7 @@ const Confirmacao = () => {
   useEffect(() => {
     if (!transactionId || paymentMethod !== 'pix' || purchaseFiredRef.current) return;
 
+    let pollCount = 0;
     const pollInterval = setInterval(async () => {
       try {
         // Primary: check local DB
