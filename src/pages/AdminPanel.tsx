@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PasswordGate from "@/components/PasswordGate";
-import { ArrowLeft, Search, Eye, RefreshCw, Settings, LogOut, CheckCircle, Clock, XCircle, Key, CreditCard, Trash2, Save, Copy, Link, Check } from "lucide-react";
+import { ArrowLeft, Search, Eye, RefreshCw, Settings, LogOut, CheckCircle, Clock, XCircle, Key, CreditCard, Trash2, Save, Copy, Link, Check, Activity, Radio } from "lucide-react";
+import { toast } from "sonner";
+import MetaTab from "@/components/admin/MetaTab";
+import TrackingTab from "@/components/admin/TrackingTab";
+import DiagnosticsTab from "@/components/admin/DiagnosticsTab";
 import { toast } from "sonner";
 
 type Booking = {
@@ -79,7 +83,7 @@ const AdminPanel = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [tab, setTab] = useState<"bookings" | "gateway" | "settings">("bookings");
+  const [tab, setTab] = useState<"bookings" | "gateway" | "meta" | "tracking" | "diagnostics" | "settings">("bookings");
   const [newAdminPass, setNewAdminPass] = useState("");
   const [newUserPass, setNewUserPass] = useState("");
 
@@ -261,7 +265,10 @@ const AdminPanel = () => {
           {[
             { id: "bookings" as const, label: "Reservas", icon: null },
             { id: "gateway" as const, label: "Pagamento", icon: <CreditCard className="w-4 h-4 inline mr-1" /> },
-            { id: "settings" as const, label: "Configurações", icon: <Settings className="w-4 h-4 inline mr-1" /> },
+            { id: "meta" as const, label: "Meta", icon: <Radio className="w-4 h-4 inline mr-1" /> },
+            { id: "tracking" as const, label: "Tracking", icon: <Radio className="w-4 h-4 inline mr-1" /> },
+            { id: "diagnostics" as const, label: "Diagnóstico", icon: <Activity className="w-4 h-4 inline mr-1" /> },
+            { id: "settings" as const, label: "Config", icon: <Settings className="w-4 h-4 inline mr-1" /> },
           ].map((t) => (
             <button
               key={t.id}
@@ -458,6 +465,15 @@ const AdminPanel = () => {
             </div>
           </div>
         )}
+
+        {/* ===== META ===== */}
+        {tab === "meta" && <MetaTab />}
+
+        {/* ===== TRACKING ===== */}
+        {tab === "tracking" && <TrackingTab />}
+
+        {/* ===== DIAGNÓSTICO ===== */}
+        {tab === "diagnostics" && <DiagnosticsTab />}
 
         {/* ===== CONFIGURAÇÕES ===== */}
         {tab === "settings" && (
