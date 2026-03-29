@@ -158,7 +158,17 @@ export function generateDynamicTrips(originStr: string, destStr: string): Trip[]
     // Selecionar tipo de assento (rotacionar)
     const seatType = seatTypes[count % seatTypes.length];
 
-    const price = calculatePrice(distKm, company.valorKm, seatType);
+    // Usar novo motor de precificação v2
+    const fareResult = getFinalFare({
+      distanceKm: distKm,
+      originState: originCity.estado,
+      destState: destCity.estado,
+      busCategory: seatType,
+      seatPosition: "comum",
+      origin: originCity.nome,
+      destination: destCity.nome,
+    });
+    const price = fareResult.finalPrice;
 
     // Calcular horário de chegada
     const depH = parseInt(dep.split(":")[0]);
@@ -168,9 +178,8 @@ export function generateDynamicTrips(originStr: string, destStr: string): Trip[]
     const arrM = totalArrMin % 60;
     const arrival = `${String(arrH).padStart(2, "0")}:${String(arrM).padStart(2, "0")}`;
 
-    // Simular assentos restantes e esgotado
+    // Simular assentos restantes
     const seatsLeft = count === 0 ? 5 : count === 3 ? 4 : count === 7 ? 3 : undefined;
-    const soldOut = count === 2 && price === 0 ? true : false;
 
     trips.push({
       company: company.name,
