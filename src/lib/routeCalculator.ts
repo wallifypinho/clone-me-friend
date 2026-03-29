@@ -71,23 +71,9 @@ export function formatDuration(minutes: number): string {
   return `${h}h${m > 0 ? String(m).padStart(2, "0") : "00"}`;
 }
 
-// ─── Preço dinâmico (delegado ao motor de precificação v2) ───
-interface BusCompany {
-  name: string;
-  logo: string;
-}
-
-const COMPANIES: BusCompany[] = [
-  { name: "Andorinha", logo: "🚌" },
-  { name: "Caiçara", logo: "🚍" },
-  { name: "Viação Garcia", logo: "🚎" },
-  { name: "Brasil Sul", logo: "🚐" },
-  { name: "Kaissara", logo: "🚌" },
-  { name: "Águia Branca", logo: "🚍" },
-  { name: "Auto Viação 1001", logo: "🚎" },
-  { name: "Boa Esperança", logo: "🚐" },
-  { name: "Catedral Turismo", logo: "🚌" },
-];
+// ─── Companhias (delegado ao Company Routing Engine) ─────────
+// A lista estática COMPANIES foi removida.
+// Agora usa getAvailableCompaniesSync() do companyRouting.ts
 
 // ─── Geração de horários ─────────────────────────────────────
 function generateDepartures(distKm: number): string[] {
