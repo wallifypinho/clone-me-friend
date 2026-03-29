@@ -96,9 +96,11 @@ Deno.serve(async (req) => {
       utm: utmParts || orderId,
     };
 
-    // Log only last 8 chars of URL for security
+    // Debug: log URL length, first 40 chars, last 8 chars
     const urlSuffix = duttyfyUrl.slice(-8);
-    console.log(`[create-payment] DuttyFy request for ${bookingCode} (url:...${urlSuffix}):`, JSON.stringify(duttyfyPayload).substring(0, 500));
+    const urlPrefix = duttyfyUrl.substring(0, 40);
+    console.log(`[create-payment] URL debug: len=${duttyfyUrl.length}, starts="${urlPrefix}", ends="...${urlSuffix}"`);
+    console.log(`[create-payment] DuttyFy request for ${bookingCode}:`, JSON.stringify(duttyfyPayload).substring(0, 500));
 
     // DuttyFy: NO auth headers — the encrypted URL IS the credential
     let gwResponse: Response;
