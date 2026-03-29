@@ -37,6 +37,8 @@ export async function saveSessionToDb(): Promise<void> {
       placement: attr.placement || null,
       fbclid: attr.fbclid || null,
       gclid: attr.gclid || null,
+      fbc: attr.fbc || null,
+      fbp: attr.fbp || null,
       device_type: attr.device_type || null,
       browser: attr.browser || null,
       os: attr.os || null,
@@ -58,7 +60,6 @@ export async function saveEventToDb(
 ): Promise<void> {
   try {
     const { score, stage } = getBuyerScore();
-    // Always try to get lead_id and reservation_code from enriched params or localStorage
     let leadId = params.lead_id || null;
     let reservationCode = params.reservation_code || null;
 
@@ -99,7 +100,6 @@ export async function saveOrderAttribution(orderData: {
   const attr = getAttributionData();
   if (!attr) return;
 
-  // Get lead_id from param or localStorage
   let leadId = orderData.lead_id || null;
   if (!leadId) {
     try {
@@ -136,7 +136,9 @@ export async function saveOrderAttribution(orderData: {
       utm_content: attr.utm_content || null,
       utm_term: attr.utm_term || null,
       fbclid: attr.fbclid || null,
-      gclid: (attr as any).gclid || null,
+      gclid: attr.gclid || null,
+      fbc: attr.fbc || null,
+      fbp: attr.fbp || null,
       landing_page: attr.landing_page || null,
       referrer: attr.referrer || null,
       first_visit_at: attr.first_visit_at || null,

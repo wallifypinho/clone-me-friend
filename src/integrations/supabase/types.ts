@@ -201,7 +201,9 @@ export type Database = {
           customer_email: string | null
           customer_name: string | null
           customer_whatsapp: string | null
+          fbc: string | null
           fbclid: string | null
+          fbp: string | null
           first_visit_at: string | null
           gateway_transaction_id: string | null
           gclid: string | null
@@ -214,6 +216,7 @@ export type Database = {
           payment_method: string | null
           payment_status: string
           placement: string | null
+          purchase_event_id: string | null
           raw_gateway_response: Json | null
           referrer: string | null
           reservation_code: string | null
@@ -240,7 +243,9 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_whatsapp?: string | null
+          fbc?: string | null
           fbclid?: string | null
+          fbp?: string | null
           first_visit_at?: string | null
           gateway_transaction_id?: string | null
           gclid?: string | null
@@ -253,6 +258,7 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string
           placement?: string | null
+          purchase_event_id?: string | null
           raw_gateway_response?: Json | null
           referrer?: string | null
           reservation_code?: string | null
@@ -279,7 +285,9 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_whatsapp?: string | null
+          fbc?: string | null
           fbclid?: string | null
+          fbp?: string | null
           first_visit_at?: string | null
           gateway_transaction_id?: string | null
           gclid?: string | null
@@ -292,6 +300,7 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string
           placement?: string | null
+          purchase_event_id?: string | null
           raw_gateway_response?: Json | null
           referrer?: string | null
           reservation_code?: string | null
@@ -316,7 +325,9 @@ export type Database = {
           campaign_name: string | null
           confirmed_at: string | null
           created_at: string
+          fbc: string | null
           fbclid: string | null
+          fbp: string | null
           first_touch_source: string | null
           first_visit_at: string | null
           gateway_transaction_id: string | null
@@ -349,7 +360,9 @@ export type Database = {
           campaign_name?: string | null
           confirmed_at?: string | null
           created_at?: string
+          fbc?: string | null
           fbclid?: string | null
+          fbp?: string | null
           first_touch_source?: string | null
           first_visit_at?: string | null
           gateway_transaction_id?: string | null
@@ -382,7 +395,9 @@ export type Database = {
           campaign_name?: string | null
           confirmed_at?: string | null
           created_at?: string
+          fbc?: string | null
           fbclid?: string | null
+          fbp?: string | null
           first_touch_source?: string | null
           first_visit_at?: string | null
           gateway_transaction_id?: string | null
@@ -743,7 +758,9 @@ export type Database = {
           campaign_name: string | null
           created_at: string
           device_type: string | null
+          fbc: string | null
           fbclid: string | null
+          fbp: string | null
           first_visit_at: string | null
           gclid: string | null
           id: string
@@ -775,7 +792,9 @@ export type Database = {
           campaign_name?: string | null
           created_at?: string
           device_type?: string | null
+          fbc?: string | null
           fbclid?: string | null
+          fbp?: string | null
           first_visit_at?: string | null
           gclid?: string | null
           id?: string
@@ -807,7 +826,9 @@ export type Database = {
           campaign_name?: string | null
           created_at?: string
           device_type?: string | null
+          fbc?: string | null
           fbclid?: string | null
+          fbp?: string | null
           first_visit_at?: string | null
           gclid?: string | null
           id?: string
