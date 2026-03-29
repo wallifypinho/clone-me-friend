@@ -143,6 +143,45 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_logs: {
+        Row: {
+          action: string
+          created_at: string
+          error_message: string | null
+          id: string
+          order_id: string | null
+          provider: string
+          request_payload: Json | null
+          response_payload: Json | null
+          status_code: number | null
+          transaction_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          order_id?: string | null
+          provider?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status_code?: number | null
+          transaction_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          order_id?: string | null
+          provider?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status_code?: number | null
+          transaction_id?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           cpf: string | null
@@ -458,6 +497,81 @@ export type Database = {
           processed_at?: string | null
           raw_status?: string | null
           received_at?: string
+        }
+        Relationships: []
+      }
+      payment_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_document: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          item_price: number | null
+          item_quantity: number | null
+          item_title: string | null
+          order_id: string | null
+          paid_at: string | null
+          payment_method: string
+          pix_code: string | null
+          provider: string
+          raw_request: Json | null
+          raw_response: Json | null
+          status_external: string | null
+          status_internal: string
+          transaction_id: string | null
+          updated_at: string
+          utm: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          customer_document?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          item_price?: number | null
+          item_quantity?: number | null
+          item_title?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          payment_method?: string
+          pix_code?: string | null
+          provider?: string
+          raw_request?: Json | null
+          raw_response?: Json | null
+          status_external?: string | null
+          status_internal?: string
+          transaction_id?: string | null
+          updated_at?: string
+          utm?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_document?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          item_price?: number | null
+          item_quantity?: number | null
+          item_title?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          payment_method?: string
+          pix_code?: string | null
+          provider?: string
+          raw_request?: Json | null
+          raw_response?: Json | null
+          status_external?: string | null
+          status_internal?: string
+          transaction_id?: string | null
+          updated_at?: string
+          utm?: string | null
         }
         Relationships: []
       }
