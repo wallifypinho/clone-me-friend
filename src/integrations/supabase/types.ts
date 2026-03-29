@@ -143,6 +143,110 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          accepts_intermunicipal: boolean
+          accepts_interstate: boolean
+          accepts_local: boolean
+          accepts_long_distance: boolean
+          accepts_metropolitan: boolean
+          created_at: string
+          distance_max_km: number | null
+          distance_min_km: number | null
+          id: string
+          is_active: boolean
+          logo: string | null
+          name: string
+          priority: number
+          updated_at: string
+        }
+        Insert: {
+          accepts_intermunicipal?: boolean
+          accepts_interstate?: boolean
+          accepts_local?: boolean
+          accepts_long_distance?: boolean
+          accepts_metropolitan?: boolean
+          created_at?: string
+          distance_max_km?: number | null
+          distance_min_km?: number | null
+          id?: string
+          is_active?: boolean
+          logo?: string | null
+          name: string
+          priority?: number
+          updated_at?: string
+        }
+        Update: {
+          accepts_intermunicipal?: boolean
+          accepts_interstate?: boolean
+          accepts_local?: boolean
+          accepts_long_distance?: boolean
+          accepts_metropolitan?: boolean
+          created_at?: string
+          distance_max_km?: number | null
+          distance_min_km?: number | null
+          id?: string
+          is_active?: boolean
+          logo?: string | null
+          name?: string
+          priority?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_coverage_rules: {
+        Row: {
+          company_id: string
+          created_at: string
+          destination_city_ibge: string | null
+          destination_state: string | null
+          id: string
+          max_distance_km: number | null
+          min_distance_km: number | null
+          origin_city_ibge: string | null
+          origin_state: string | null
+          priority: number
+          rule_type: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          destination_city_ibge?: string | null
+          destination_state?: string | null
+          id?: string
+          max_distance_km?: number | null
+          min_distance_km?: number | null
+          origin_city_ibge?: string | null
+          origin_state?: string | null
+          priority?: number
+          rule_type?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          destination_city_ibge?: string | null
+          destination_state?: string | null
+          id?: string
+          max_distance_km?: number | null
+          min_distance_km?: number | null
+          origin_city_ibge?: string | null
+          origin_state?: string | null
+          priority?: number
+          rule_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_coverage_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_logs: {
         Row: {
           action: string
