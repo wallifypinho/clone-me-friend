@@ -133,18 +133,22 @@ export function generateDynamicTrips(originStr: string, destStr: string): Trip[]
   const departures = generateDepartures(distKm);
   const seatTypes = getSeatTypes(distKm);
 
+  // Obter companhias elegíveis via Company Routing Engine
+  const eligibleCompanies = getAvailableCompaniesSync(originStr, destStr);
+  // Fallback: se nenhuma companhia elegível, não gerar viagens
+  if (eligibleCompanies.length === 0) return [];
+
   const trips: Trip[] = [];
 
   // Gerar combinações empresa × horário × tipo de assento
-  // Limitar para não ter excesso
   const maxTrips = 12;
   let count = 0;
 
   for (const dep of departures) {
     if (count >= maxTrips) break;
 
-    // Selecionar empresa (rotacionar)
-    const company = COMPANIES[count % COMPANIES.length];
+    // Selecionar empresa elegível (rotacionar)
+    const company = eligibleCompanies[count % eligibleCompanies.length];
     // Selecionar tipo de assento (rotacionar)
     const seatType = seatTypes[count % seatTypes.length];
 
