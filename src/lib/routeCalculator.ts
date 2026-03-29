@@ -67,36 +67,23 @@ export function formatDuration(minutes: number): string {
   return `${h}h${m > 0 ? String(m).padStart(2, "0") : "00"}`;
 }
 
-// ─── Preço dinâmico ──────────────────────────────────────────
+// ─── Preço dinâmico (delegado ao motor de precificação v2) ───
 interface BusCompany {
   name: string;
   logo: string;
-  valorKm: number; // R$/km base
 }
 
 const COMPANIES: BusCompany[] = [
-  { name: "Andorinha", logo: "🚌", valorKm: 0.18 },
-  { name: "Caiçara", logo: "🚍", valorKm: 0.16 },
-  { name: "Viação Garcia", logo: "🚎", valorKm: 0.17 },
-  { name: "Brasil Sul", logo: "🚐", valorKm: 0.19 },
-  { name: "Kaissara", logo: "🚌", valorKm: 0.20 },
-  { name: "Águia Branca", logo: "🚍", valorKm: 0.22 },
-  { name: "Auto Viação 1001", logo: "🚎", valorKm: 0.21 },
-  { name: "Boa Esperança", logo: "🚐", valorKm: 0.17 },
-  { name: "Catedral Turismo", logo: "🚌", valorKm: 0.19 },
+  { name: "Andorinha", logo: "🚌" },
+  { name: "Caiçara", logo: "🚍" },
+  { name: "Viação Garcia", logo: "🚎" },
+  { name: "Brasil Sul", logo: "🚐" },
+  { name: "Kaissara", logo: "🚌" },
+  { name: "Águia Branca", logo: "🚍" },
+  { name: "Auto Viação 1001", logo: "🚎" },
+  { name: "Boa Esperança", logo: "🚐" },
+  { name: "Catedral Turismo", logo: "🚌" },
 ];
-
-const SEAT_FACTORS: Record<string, number> = {
-  "Convencional": 1.0,
-  "Semi-Leito": 1.3,
-  "Leito": 1.8,
-  "Leito Cama": 2.5,
-};
-
-function calculatePrice(distKm: number, valorKm: number, seatType: string): number {
-  const factor = SEAT_FACTORS[seatType] || 1.0;
-  return Math.round(distKm * valorKm * factor * 100) / 100;
-}
 
 // ─── Geração de horários ─────────────────────────────────────
 function generateDepartures(distKm: number): string[] {
