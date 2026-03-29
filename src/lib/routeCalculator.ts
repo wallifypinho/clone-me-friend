@@ -191,9 +191,9 @@ export function generateDynamicTrips(originStr: string, destStr: string): Trip[]
       destination: destCity.nome,
       seatType,
       originalPrice: price,
-      discountedPrice: price > 0 ? Math.round((price / 2) * 100) / 100 : 0,
+      discountedPrice: applyCommercialRounding(price / 2),
       seatsLeft,
-      soldOut,
+      soldOut: false,
     });
 
     count++;
