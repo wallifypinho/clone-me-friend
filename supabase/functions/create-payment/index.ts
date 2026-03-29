@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
     // ── DuttyFy payload (amount in CENTS) ───────────────────────
     const gatewayPayload = {
       amount: amountCents,
+      description: `Passagem ${bookingCode}`,
       customer: {
         name: customerName || "Cliente",
         document: cpfClean,
