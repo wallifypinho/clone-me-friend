@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     const phoneClean = (customerPhone || "").replace(/\D/g, "");
 
     // Get DuttyFy encrypted URL (this IS the auth — no separate API key needed)
-    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL");
+    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
 
     if (!duttyfyUrl) {
       console.error("[create-payment] DUTTYFY_ENCRYPTED_URL not configured");
