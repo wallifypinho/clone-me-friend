@@ -6,6 +6,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 function normalizeStatus(rawStatus: string): string {
   const s = (rawStatus || "").toUpperCase().trim();
   const map: Record<string, string> = {
@@ -22,18 +29,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
 
   try {
     const { transactionId } = await req.json();
-
     if (!transactionId) {
-      return new Response(
-        JSON.stringify({ error: "transactionId is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ error: "transactionId is required" }, 400);
     }
 
     // 1. Check local DB first
@@ -44,114 +48,92 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (order?.payment_status === "paid") {
-      return new Response(
-        JSON.stringify({ status: "paid", paid_at: order.paid_at, purchase_event_id: order.purchase_event_id, source: "database" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({
+        status: "paid", paid_at: order.paid_at,
+        purchase_event_id: order.purchase_event_id, source: "database",
+      });
     }
 
-    // 2. Fallback: query DuttyFy via encrypted URL (GET with ?transactionId=)
-    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL");
-
+    // 2. Poll DuttyFy via GET on the same encrypted URL
+    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
     if (!duttyfyUrl) {
-      return new Response(
-        JSON.stringify({ status: order?.payment_status || "unknown", source: "database_only" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ status: order?.payment_status || "unknown", source: "database_only" });
     }
 
     try {
-      const statusEndpoint = `${duttyfyUrl}?transactionId=${encodeURIComponent(transactionId)}`;
-      const gwRes = await fetch(statusEndpoint, {
+      const statusUrl = `${duttyfyUrl}?transactionId=${encodeURIComponent(transactionId)}`;
+      console.log(`[check-status] Polling: ends="...${duttyfyUrl.slice(-8)}", txId=${transactionId.substring(0, 12)}...`);
+
+      const gwRes = await fetch(statusUrl, {
         method: "GET",
-        headers: { "Accept": "application/json" },
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(10_000),
       });
 
-      const gwResponseText = await gwRes.text();
-      console.log(`[check-payment-status] DuttyFy status response: ${gwResponseText.substring(0, 500)}`);
+      const gwText = await gwRes.text();
+      console.log(`[check-status] Response: status=${gwRes.status}, body=${gwText.substring(0, 300)}`);
 
-      // Log the query
       await supabase.from("integration_logs").insert({
-        provider: "duttyfy",
-        action: "check_status",
-        response_payload: { raw: gwResponseText.substring(0, 2000) },
+        provider: "duttyfy", action: "check_status",
+        response_payload: { raw: gwText.substring(0, 2000) },
         status_code: gwRes.status,
         transaction_id: transactionId,
         order_id: order?.order_id || null,
       });
 
       if (gwRes.ok) {
-        let gwData: any;
-        try { gwData = JSON.parse(gwResponseText); } catch { gwData = {}; }
+        let gwData: Record<string, unknown> = {};
+        try { gwData = JSON.parse(gwText); } catch { /* ignore */ }
 
-        const rawStatus = gwData?.status || gwData?.Status || "";
+        const rawStatus = (gwData?.status || gwData?.Status || "") as string;
         const normalized = normalizeStatus(rawStatus);
-        const paidAt = gwData?.paidAt || gwData?.paid_at || gwData?.PaidAt || null;
+        const paidAt = (gwData?.paidAt || gwData?.paid_at || null) as string | null;
 
-        // If gateway says paid but our DB doesn't know yet, update
+        // Gateway says paid but DB doesn't know → update via conditional UPDATE
         if (normalized === "paid" && order?.payment_status !== "paid") {
           const eventId = `poll_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
           const paidAtTs = paidAt ? new Date(paidAt).toISOString() : new Date().toISOString();
 
-          await supabase.from("orders").update({
-            payment_status: "paid",
-            paid_at: paidAtTs,
-            purchase_event_id: eventId,
-            last_gateway_update_at: new Date().toISOString(),
-          }).eq("gateway_transaction_id", transactionId);
+          await Promise.all([
+            supabase.from("orders").update({
+              payment_status: "paid", paid_at: paidAtTs,
+              purchase_event_id: eventId,
+              last_gateway_update_at: new Date().toISOString(),
+            }).eq("gateway_transaction_id", transactionId),
 
-          // Update booking
-          if (order?.reservation_code) {
-            await supabase.from("bookings").update({
-              status: "confirmed",
-              paid_at: paidAtTs,
-            }).eq("code", order.reservation_code);
-          }
+            order?.reservation_code
+              ? supabase.from("bookings").update({ status: "confirmed", paid_at: paidAtTs }).eq("code", order.reservation_code)
+              : Promise.resolve(),
 
-          // Update payment_transaction
-          await supabase.from("payment_transactions").update({
-            status_internal: "paid",
-            status_external: rawStatus,
-            paid_at: paidAtTs,
-            updated_at: new Date().toISOString(),
-          }).eq("transaction_id", transactionId);
+            supabase.from("payment_transactions").update({
+              status_internal: "paid", status_external: rawStatus,
+              paid_at: paidAtTs, updated_at: new Date().toISOString(),
+            }).eq("transaction_id", transactionId),
 
-          // Log payment event
-          await supabase.from("payment_events").insert({
-            event_id: eventId,
-            gateway_transaction_id: transactionId,
-            raw_status: rawStatus,
-            normalized_status: "paid",
-            payload_json: gwData,
-            received_at: new Date().toISOString(),
-            processed_at: new Date().toISOString(),
-            order_id: order?.order_id || null,
+            supabase.from("payment_events").insert({
+              event_id: eventId, gateway_transaction_id: transactionId,
+              raw_status: rawStatus, normalized_status: "paid",
+              payload_json: gwData, received_at: new Date().toISOString(),
+              processed_at: new Date().toISOString(),
+              order_id: order?.order_id || null,
+            }),
+          ]);
+
+          return jsonResponse({
+            status: "paid", paid_at: paidAtTs,
+            purchase_event_id: eventId, source: "gateway_poll",
           });
-
-          return new Response(
-            JSON.stringify({ status: "paid", paid_at: paidAtTs, purchase_event_id: eventId, source: "gateway_poll" }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
         }
 
-        return new Response(
-          JSON.stringify({ status: normalized, raw_status: rawStatus, source: "gateway" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ status: normalized, raw_status: rawStatus, source: "gateway" });
       }
     } catch (gwErr) {
-      console.error("[check-payment-status] DuttyFy query error:", gwErr);
+      console.error("[check-status] Gateway poll error:", gwErr);
     }
 
-    return new Response(
-      JSON.stringify({ status: order?.payment_status || "unknown", source: "database" }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ status: order?.payment_status || "unknown", source: "database" });
   } catch (err) {
-    console.error("[check-payment-status] Error:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("[check-status] Unhandled error:", err);
+    return jsonResponse({ error: "Internal error" }, 500);
   }
 });
