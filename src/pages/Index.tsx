@@ -1,22 +1,51 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import Header from "@/components/Header";
 import SearchForm from "@/components/SearchForm";
 import DestinationCard from "@/components/DestinationCard";
 import HomeSections from "@/components/HomeSections";
 import { analytics } from "@/lib/analytics";
+import { getFinalFare, applyCommercialRounding } from "@/lib/pricing";
+import { findCityByName } from "@/data/cidadesBrasil";
+import { getDistance } from "@/lib/routeCalculator";
 
-const offers1 = [
-  { image: "/images/dest-rio.webp", origem: "São Paulo, SP", destino: "Rio de Janeiro, RJ", price: "25,00" },
-  { image: "/images/dest-sp.webp", origem: "Rio de Janeiro, RJ", destino: "São Paulo, SP", price: "25,00" },
-  { image: "/images/dest-bh.webp", origem: "São Paulo, SP", destino: "Belo Horizonte, MG", price: "30,88" },
-  { image: "/images/dest-rio.webp", origem: "Belo Horizonte, MG", destino: "Rio de Janeiro, RJ", price: "25,00" },
+function calcDisplayPrice(origemName: string, destinoName: string): string {
+  const origin = findCityByName(origemName);
+  const dest = findCityByName(destinoName);
+  if (!origin || !dest) return "49,90";
+  const distKm = getDistance(origin, dest);
+  const fare = getFinalFare({
+    distanceKm: distKm,
+    originState: origin.estado,
+    destState: dest.estado,
+    busCategory: "Convencional",
+    seatPosition: "comum",
+    origin: origin.nome,
+    destination: dest.nome,
+  });
+  const discounted = applyCommercialRounding(fare.finalPrice / 2);
+  return discounted.toFixed(2).replace(".", ",");
+}
+
+interface OfferDef {
+  image: string;
+  origem: string;
+  destino: string;
+  origemName: string;
+  destinoName: string;
+}
+
+const offersDef1: OfferDef[] = [
+  { image: "/images/dest-rio.webp", origem: "São Paulo, SP", destino: "Rio de Janeiro, RJ", origemName: "São Paulo", destinoName: "Rio de Janeiro" },
+  { image: "/images/dest-sp.webp", origem: "Rio de Janeiro, RJ", destino: "São Paulo, SP", origemName: "Rio de Janeiro", destinoName: "São Paulo" },
+  { image: "/images/dest-bh.webp", origem: "São Paulo, SP", destino: "Belo Horizonte, MG", origemName: "São Paulo", destinoName: "Belo Horizonte" },
+  { image: "/images/dest-rio.webp", origem: "Belo Horizonte, MG", destino: "Rio de Janeiro, RJ", origemName: "Belo Horizonte", destinoName: "Rio de Janeiro" },
 ];
 
-const offers2 = [
-  { image: "/images/dest-rio.webp", origem: "São Paulo, SP", destino: "Rio de Janeiro, RJ", price: "25,00" },
-  { image: "/images/dest-bh.webp", origem: "São Paulo, SP", destino: "Belo Horizonte, MG", price: "30,88" },
-  { image: "/images/dest-cwb.webp", origem: "São Paulo, SP", destino: "Curitiba, PR", price: "27,99" },
-  { image: "/images/dest-bh.webp", origem: "Rio de Janeiro, RJ", destino: "Belo Horizonte, MG", price: "25,00" },
+const offersDef2: OfferDef[] = [
+  { image: "/images/dest-rio.webp", origem: "São Paulo, SP", destino: "Rio de Janeiro, RJ", origemName: "São Paulo", destinoName: "Rio de Janeiro" },
+  { image: "/images/dest-bh.webp", origem: "São Paulo, SP", destino: "Belo Horizonte, MG", origemName: "São Paulo", destinoName: "Belo Horizonte" },
+  { image: "/images/dest-cwb.webp", origem: "São Paulo, SP", destino: "Curitiba, PR", origemName: "São Paulo", destinoName: "Curitiba" },
+  { image: "/images/dest-bh.webp", origem: "Rio de Janeiro, RJ", destino: "Belo Horizonte, MG", origemName: "Rio de Janeiro", destinoName: "Belo Horizonte" },
 ];
 
 const Index = () => {
