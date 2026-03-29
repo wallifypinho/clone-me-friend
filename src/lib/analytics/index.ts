@@ -125,7 +125,9 @@ export const analytics = {
     // Queue for CAPI if critical (standard conversion events only)
     if (CAPI_EVENTS.has(eventName)) {
       const leadData = this.getLeadData();
-      queueServerEvent(eventName, eventId, { ...leadData, fbc: enriched.fbc, fbp: enriched.fbp }, enriched);
+      const fbc = (enriched as any).fbc || null;
+      const fbp = (enriched as any).fbp || null;
+      queueServerEvent(eventName, eventId, { ...leadData, fbc, fbp }, enriched);
     }
   },
 
