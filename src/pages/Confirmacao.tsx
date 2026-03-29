@@ -81,21 +81,40 @@ const Confirmacao = () => {
 
     const pollInterval = setInterval(async () => {
       try {
+        // Primary: check local DB
         const { data: orderData } = await supabase
           .from('orders')
           .select('payment_status, paid_at, purchase_event_id')
           .eq('gateway_transaction_id', transactionId)
           .maybeSingle();
 
-        if (orderData?.payment_status === 'paid' && !purchaseFiredRef.current) {
+        let isPaid = orderData?.payment_status === 'paid';
+        let paidAt = orderData?.paid_at;
+        let purchaseEventId = (orderData as any)?.purchase_event_id;
+
+        // Fallback: if DB doesn't show paid, query gateway directly every 3rd poll
+        if (!isPaid && pollCount % 3 === 0) {
+          try {
+            const { data: gwData } = await supabase.functions.invoke('check-payment-status', {
+              body: { transactionId },
+            });
+            if (gwData?.status === 'paid') {
+              isPaid = true;
+              paidAt = gwData.paid_at;
+              purchaseEventId = gwData.purchase_event_id;
+            }
+          } catch (gwErr) {
+            console.warn("Gateway poll fallback error:", gwErr);
+          }
+        }
+        pollCount++;
+
+        if (isPaid && !purchaseFiredRef.current) {
           purchaseFiredRef.current = true;
           setPaymentConfirmed(true);
           clearInterval(pollInterval);
 
           const attrData = analytics.getAttributionData();
-
-          // Use the same event_id from CAPI (webhook) for deduplication
-          const purchaseEventId = (orderData as any)?.purchase_event_id || undefined;
 
           const paidPayload: Record<string, any> = {
             value: total,
@@ -107,7 +126,7 @@ const Confirmacao = () => {
             gateway_transaction_id: transactionId,
             session_id: analytics.getSessionId(),
             lead_id: analytics.getLeadData()?.lead_id || null,
-            paid_at: orderData.paid_at || new Date().toISOString(),
+            paid_at: paidAt || new Date().toISOString(),
             payment_status: 'paid',
             utm_source: attrData?.utm_source || null,
             utm_medium: attrData?.utm_medium || null,
@@ -121,15 +140,11 @@ const Confirmacao = () => {
             campaign_id: attrData?.campaign_id || null,
           };
 
-          // If webhook already sent CAPI with a specific event_id, use the same one
-          // for browser pixel deduplication
           if (purchaseEventId) {
             paidPayload.event_id = purchaseEventId;
           }
 
-          // Purchase = conversão real para pixel (deduped with CAPI via event_id)
           analytics.trackEvent('Purchase', paidPayload);
-          // OrderPaid = evento interno de análise (DB only)
           analytics.trackEvent('OrderPaid', paidPayload);
           analytics.updateScore('PURCHASE_COMPLETED');
 
