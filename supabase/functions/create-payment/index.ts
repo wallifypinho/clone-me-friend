@@ -161,11 +161,17 @@ Deno.serve(async (req) => {
 
     // Handle errors
     if (!gwResponse.ok) {
-      const errorMsg = gwData?.message || gwData?.error || `Erro no gateway (${gwResponse.status})`;
+      const rawErrorMsg = gwData?.message ?? gwData?.error ?? `Erro no gateway (${gwResponse.status})`;
+      const errorMsg = Array.isArray(rawErrorMsg)
+        ? rawErrorMsg.filter(Boolean).join(" ")
+        : String(rawErrorMsg);
+
       let userError = errorMsg;
-      if (errorMsg.toLowerCase().includes("cpf") || errorMsg.toLowerCase().includes("document")) {
+      const normalizedError = errorMsg.toLowerCase();
+
+      if (normalizedError.includes("cpf") || normalizedError.includes("document")) {
         userError = "CPF inválido. Verifique o documento informado.";
-      } else if (errorMsg.toLowerCase().includes("mínimo") || errorMsg.toLowerCase().includes("minimum")) {
+      } else if (normalizedError.includes("mínimo") || normalizedError.includes("minimum")) {
         userError = "Valor mínimo de R$ 1,00 não atingido.";
       } else if (gwResponse.status === 401) {
         userError = "URL encriptada expirada. Regenere no painel DuttyFy.";
