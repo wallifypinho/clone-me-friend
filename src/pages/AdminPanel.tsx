@@ -179,35 +179,17 @@ const AdminPanel = () => {
     }
   };
 
-  const saveGateway = async () => {
-    if (!gatewayPublicKey.trim() || !gatewaySecretKey.trim()) {
-      toast.error("Preencha as duas chaves para ativar o gateway");
-      return;
+  const recheckPayment = async (txId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("check-payment-status", {
+        body: { transactionId: txId },
+      });
+      if (error) throw error;
+      toast.success(`Status: ${data?.status || "unknown"} (${data?.source || ""})`);
+      fetchGatewaySettings();
+    } catch (err) {
+      toast.error("Erro ao consultar status");
     }
-    setGatewayLoading(true);
-    await upsertSetting("gateway_provider", gatewayProvider);
-    await upsertSetting("gateway_public_key", gatewayPublicKey.trim());
-    await upsertSetting("gateway_secret_key", gatewaySecretKey.trim());
-    await upsertSetting("gateway_api_url", GATEWAY_CONFIG[gatewayProvider].apiUrl);
-    await upsertSetting("gateway_active", "true");
-    setGatewayActive(true);
-    setGatewayLoading(false);
-    toast.success(`Gateway ${GATEWAY_CONFIG[gatewayProvider].name} salvo e ativado!`);
-  };
-
-  const removeGateway = async () => {
-    setGatewayLoading(true);
-    await upsertSetting("gateway_public_key", "");
-    await upsertSetting("gateway_secret_key", "");
-    await upsertSetting("gateway_api_url", "");
-    await upsertSetting("gateway_provider", "");
-    await upsertSetting("gateway_active", "false");
-    setGatewayPublicKey("");
-    setGatewaySecretKey("");
-    setGatewayProvider("hurapay");
-    setGatewayActive(false);
-    setGatewayLoading(false);
-    toast.success("Chaves do gateway removidas");
   };
 
   const filtered = bookings.filter((b) => {
