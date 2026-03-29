@@ -86,29 +86,11 @@ const AdminPanel = () => {
   const [newAdminPass, setNewAdminPass] = useState("");
   const [newUserPass, setNewUserPass] = useState("");
 
-  // Gateway state
-  const [gatewayProvider, setGatewayProvider] = useState<"hurapay" | "anubispay">("hurapay");
-  const [gatewayPublicKey, setGatewayPublicKey] = useState("");
-  const [gatewaySecretKey, setGatewaySecretKey] = useState("");
+  // Gateway state — DuttyFy
   const [gatewayActive, setGatewayActive] = useState(false);
   const [gatewayLoading, setGatewayLoading] = useState(false);
-
-  const GATEWAY_CONFIG = {
-    hurapay: {
-      name: "HuraPay",
-      apiUrl: "https://api.hurapay.com.br/v1/transactions",
-      pkPlaceholder: "hurapay_live_...",
-      skPlaceholder: "sk_live_...",
-      description: "Gateway HuraPay • PIX e Cartão de Crédito",
-    },
-    anubispay: {
-      name: "AnubisPay",
-      apiUrl: "https://api.anubispay.com.br/v1/transactions",
-      pkPlaceholder: "pk_...",
-      skPlaceholder: "sk_...",
-      description: "Gateway AnubisPay • PIX e Cartão de Crédito",
-    },
-  };
+  const [recentTxns, setRecentTxns] = useState<any[]>([]);
+  const [recentLogs, setRecentLogs] = useState<any[]>([]);
 
   const checkPassword = async (password: string) => {
     const { data } = await supabase
@@ -134,16 +116,30 @@ const AdminPanel = () => {
     const { data } = await supabase
       .from("admin_settings")
       .select("key, value")
-      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_active", "gateway_provider"]);
+      .in("key", ["gateway_active"]);
 
     if (data) {
       for (const row of data) {
-        if (row.key === "gateway_public_key") setGatewayPublicKey(row.value);
-        if (row.key === "gateway_secret_key") setGatewaySecretKey(row.value);
         if (row.key === "gateway_active") setGatewayActive(row.value === "true");
-        if (row.key === "gateway_provider" && (row.value === "hurapay" || row.value === "anubispay")) setGatewayProvider(row.value);
       }
     }
+
+    // Fetch recent transactions
+    const { data: txns } = await supabase
+      .from("payment_transactions")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setRecentTxns(txns || []);
+
+    // Fetch recent integration logs
+    const { data: logs } = await supabase
+      .from("integration_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setRecentLogs(logs || []);
+
     setGatewayLoading(false);
   };
 
