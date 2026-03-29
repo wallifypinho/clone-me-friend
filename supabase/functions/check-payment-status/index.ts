@@ -6,6 +6,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function normalizeStatus(rawStatus: string): string {
+  const s = (rawStatus || "").toUpperCase().trim();
+  const map: Record<string, string> = {
+    PAID: "paid", APPROVED: "paid", CONFIRMED: "paid", CAPTURED: "paid", COMPLETED: "paid",
+    PENDING: "pending", WAITING_PAYMENT: "pending",
+    FAILED: "failed", DECLINED: "failed", REFUSED: "failed",
+    EXPIRED: "expired", CANCELED: "canceled", CANCELLED: "canceled",
+  };
+  return map[s] || "unknown";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -28,7 +39,7 @@ Deno.serve(async (req) => {
     // 1. Check local DB first
     const { data: order } = await supabase
       .from("orders")
-      .select("payment_status, paid_at, purchase_event_id, order_id")
+      .select("payment_status, paid_at, purchase_event_id, order_id, reservation_code")
       .eq("gateway_transaction_id", transactionId)
       .maybeSingle();
 
@@ -39,76 +50,77 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Fallback: query gateway directly
-    const { data: keys } = await supabase
-      .from("admin_settings")
-      .select("key, value")
-      .in("key", ["gateway_secret_key", "gateway_api_url"]);
+    // 2. Fallback: query DuttyFy status endpoint
+    const duttyfyApiKey = Deno.env.get("DUTTYFY_API_KEY");
+    const duttyfyStatusUrl = Deno.env.get("DUTTYFY_STATUS_URL");
 
-    const secretKey = keys?.find((k: any) => k.key === "gateway_secret_key")?.value;
-    const gatewayBaseUrl = keys?.find((k: any) => k.key === "gateway_api_url")?.value || "https://api.hurapayments.com.br";
-
-    if (!secretKey) {
+    if (!duttyfyApiKey || !duttyfyStatusUrl) {
       return new Response(
         JSON.stringify({ status: order?.payment_status || "unknown", source: "database_only" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Try to check status at gateway
-    const statusUrl = `${gatewayBaseUrl.replace(/\/+$/, "").replace(/\/v1\/payment-transaction\/create$/, "")}/v1/payment-transaction/${transactionId}`;
-
     try {
-      const gwRes = await fetch(statusUrl, {
+      const statusEndpoint = `${duttyfyStatusUrl}?transactionId=${encodeURIComponent(transactionId)}`;
+      const gwRes = await fetch(statusEndpoint, {
         method: "GET",
         headers: {
           "Accept": "application/json",
-          "Authorization": `Bearer ${secretKey}`,
+          "Authorization": `Bearer ${duttyfyApiKey}`,
         },
       });
 
+      const gwResponseText = await gwRes.text();
+      console.log(`[check-payment-status] DuttyFy status response: ${gwResponseText.substring(0, 500)}`);
+
+      // Log the query
+      await supabase.from("integration_logs").insert({
+        provider: "duttyfy",
+        action: "check_status",
+        response_payload: { raw: gwResponseText.substring(0, 2000) },
+        status_code: gwRes.status,
+        transaction_id: transactionId,
+        order_id: order?.order_id || null,
+      });
+
       if (gwRes.ok) {
-        const gwData = await gwRes.json();
-        const data = gwData?.data || gwData;
-        const rawStatus = (data?.Status || data?.status || "").toUpperCase();
+        let gwData: any;
+        try { gwData = JSON.parse(gwResponseText); } catch { gwData = {}; }
 
-        const statusMap: Record<string, string> = {
-          PAID: "paid", APPROVED: "paid", CONFIRMED: "paid", CAPTURED: "paid", COMPLETED: "paid",
-          PENDING: "pending", WAITING_PAYMENT: "pending",
-          FAILED: "failed", DECLINED: "failed", REFUSED: "failed",
-          EXPIRED: "expired", CANCELED: "canceled", CANCELLED: "canceled",
-        };
-        const normalized = statusMap[rawStatus] || "unknown";
+        const rawStatus = gwData?.status || gwData?.Status || "";
+        const normalized = normalizeStatus(rawStatus);
+        const paidAt = gwData?.paidAt || gwData?.paid_at || gwData?.PaidAt || null;
 
-        // If gateway says paid but our DB doesn't know yet, update it
+        // If gateway says paid but our DB doesn't know yet, update
         if (normalized === "paid" && order?.payment_status !== "paid") {
           const eventId = `poll_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
-          const paidAt = data?.PaidAt || data?.paid_at || new Date().toISOString();
+          const paidAtTs = paidAt ? new Date(paidAt).toISOString() : new Date().toISOString();
 
           await supabase.from("orders").update({
             payment_status: "paid",
-            paid_at: paidAt,
+            paid_at: paidAtTs,
             purchase_event_id: eventId,
             last_gateway_update_at: new Date().toISOString(),
           }).eq("gateway_transaction_id", transactionId);
 
-          // Update booking too
-          if (order?.order_id) {
-            const { data: orderFull } = await supabase
-              .from("orders")
-              .select("reservation_code")
-              .eq("gateway_transaction_id", transactionId)
-              .maybeSingle();
-
-            if (orderFull?.reservation_code) {
-              await supabase.from("bookings").update({
-                status: "confirmed",
-                paid_at: paidAt,
-              }).eq("code", orderFull.reservation_code);
-            }
+          // Update booking
+          if (order?.reservation_code) {
+            await supabase.from("bookings").update({
+              status: "confirmed",
+              paid_at: paidAtTs,
+            }).eq("code", order.reservation_code);
           }
 
-          // Log the event
+          // Update payment_transaction
+          await supabase.from("payment_transactions").update({
+            status_internal: "paid",
+            status_external: rawStatus,
+            paid_at: paidAtTs,
+            updated_at: new Date().toISOString(),
+          }).eq("transaction_id", transactionId);
+
+          // Log payment event
           await supabase.from("payment_events").insert({
             event_id: eventId,
             gateway_transaction_id: transactionId,
@@ -121,7 +133,7 @@ Deno.serve(async (req) => {
           });
 
           return new Response(
-            JSON.stringify({ status: "paid", paid_at: paidAt, purchase_event_id: eventId, source: "gateway_poll" }),
+            JSON.stringify({ status: "paid", paid_at: paidAtTs, purchase_event_id: eventId, source: "gateway_poll" }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -132,10 +144,9 @@ Deno.serve(async (req) => {
         );
       }
     } catch (gwErr) {
-      console.error("[check-payment-status] Gateway query error:", gwErr);
+      console.error("[check-payment-status] DuttyFy query error:", gwErr);
     }
 
-    // Return DB status as last resort
     return new Response(
       JSON.stringify({ status: order?.payment_status || "unknown", source: "database" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -29,153 +29,198 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch gateway keys from admin_settings
-    const { data: keys } = await supabase
-      .from("admin_settings").select("key, value")
-      .in("key", ["gateway_public_key", "gateway_secret_key", "gateway_api_url", "gateway_amount_format"]);
-
-    const publicKey = keys?.find((k: any) => k.key === "gateway_public_key")?.value;
-    const secretKey = keys?.find((k: any) => k.key === "gateway_secret_key")?.value;
-    const gatewayUrl = keys?.find((k: any) => k.key === "gateway_api_url")?.value || "https://api.hurapayments.com.br/v1/payment-transaction/create";
-    const amountFormat = keys?.find((k: any) => k.key === "gateway_amount_format")?.value || "cents";
-
-    if (!publicKey || !secretKey) {
+    // Validate minimum amount
+    if (amount < 1) {
       return new Response(
-        JSON.stringify({ error: "Gateway de pagamento não configurado. Configure as chaves no painel admin." }),
+        JSON.stringify({ error: "Valor mínimo de R$ 1,00" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate CPF
+    const cpfClean = (customerCpf || "").replace(/\D/g, "");
+    if (cpfClean.length !== 11 && cpfClean.length !== 14) {
+      return new Response(
+        JSON.stringify({ error: "CPF/CNPJ inválido. Verifique o documento informado." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get DuttyFy credentials from secrets
+    const duttyfyApiKey = Deno.env.get("DUTTYFY_API_KEY");
+    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL");
+
+    if (!duttyfyApiKey || !duttyfyUrl) {
+      console.error("[create-payment] DuttyFy credentials not configured");
+      return new Response(
+        JSON.stringify({ error: "Gateway de pagamento não configurado. Configure as credenciais DuttyFy." }),
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const orderId = `ord_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
-    // Configurable: "cents" sends amount*100, "reais" sends amount as-is
-    const gatewayAmount = amountFormat === "reais" ? amount : Math.round(amount * 100);
-    const cpfClean = (customerCpf || "00000000000").replace(/\D/g, "");
+    const attr = attribution || {};
 
-    const gatewayPayload: Record<string, any> = {
-      amount: gatewayAmount,
-      payment_method: paymentMethod === "pix" ? "pix" : "credit_card",
-      postback_url: `${supabaseUrl}/functions/v1/payment-webhook`,
+    // Build UTM string for DuttyFy
+    const utmParts = [
+      attr.utm_source && `src=${attr.utm_source}`,
+      attr.utm_medium && `md=${attr.utm_medium}`,
+      attr.utm_campaign && `cmp=${attr.utm_campaign}`,
+      attr.utm_content && `cnt=${attr.utm_content}`,
+      attr.utm_term && `trm=${attr.utm_term}`,
+      attr.fbclid && `fbclid=${attr.fbclid}`,
+      attr.session_id && `sid=${attr.session_id}`,
+    ].filter(Boolean).join("|");
+
+    // DuttyFy payload — amount in reais (number)
+    const duttyfyPayload = {
+      amount: Number(amount),
+      description: `Passagem ${bookingCode}`,
       customer: {
         name: customerName || "Cliente",
+        document: cpfClean,
         email: customerEmail || "cliente@email.com",
-        document: { type: cpfClean.length > 11 ? "cnpj" : "cpf", number: cpfClean },
-        phone: customerPhone || "+5500000000000",
+        phone: (customerPhone || "").replace(/\D/g, "") || "00000000000",
       },
-      items: [{
+      item: {
         title: `Passagem ${bookingCode}`,
-        unit_price: gatewayAmount, quantity: 1, tangible: false,
-      }],
-      metadata: {
-        booking_code: bookingCode, order_id: orderId,
-        session_id: attribution?.session_id || "",
-        lead_id: attribution?.lead_id || "",
+        price: Number(amount),
+        quantity: 1,
       },
+      paymentMethod: "PIX",
+      utm: utmParts || orderId,
     };
 
-    if (paymentMethod === "pix") {
-      gatewayPayload.pix = { expires_in_days: 1 };
-    }
+    console.log(`[create-payment] DuttyFy request for ${bookingCode}:`, JSON.stringify(duttyfyPayload).substring(0, 500));
 
-    const endpoint = gatewayUrl.includes("/payment-transaction/create")
-      ? gatewayUrl
-      : `${gatewayUrl.replace(/\/+$/, "")}/v1/payment-transaction/create`;
-
-    const authStrategies = [
-      { name: "Bearer SecretKey", headers: { "Authorization": `Bearer ${secretKey}` } },
-      { name: "Basic PK:SK", headers: { "Authorization": `Basic ${btoa(`${publicKey}:${secretKey}`)}` } },
-      { name: "Bearer PublicKey", headers: { "Authorization": `Bearer ${publicKey}` } },
-      { name: "ApiKey header", headers: { "x-api-key": secretKey } },
-    ];
-
-    let lastResponse: Response | null = null;
-    let lastResponseText = "";
-    let lastStrategy = "";
-
-    for (const strategy of authStrategies) {
-      console.log(`Trying auth: ${strategy.name}`);
-      try {
-        lastResponse = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Accept": "application/json", "Content-Type": "application/json", ...strategy.headers },
-          body: JSON.stringify(gatewayPayload),
-        });
-        lastResponseText = await lastResponse.text();
-        lastStrategy = strategy.name;
-        console.log(`${strategy.name} => status ${lastResponse.status}: ${lastResponseText.substring(0, 300)}`);
-        if (lastResponse.status !== 401 && lastResponse.status !== 403) break;
-      } catch (fetchErr) {
-        console.error(`${strategy.name} fetch error:`, fetchErr);
-        continue;
-      }
-    }
-
-    if (!lastResponse) {
-      return new Response(
-        JSON.stringify({ error: "Não foi possível conectar ao gateway de pagamento" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    let gatewayData: any;
+    // Call DuttyFy API
+    let gwResponse: Response;
+    let gwResponseText: string;
     try {
-      gatewayData = JSON.parse(lastResponseText);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Resposta inválida do gateway", details: lastResponseText.substring(0, 500), auth: lastStrategy }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+      gwResponse = await fetch(duttyfyUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${duttyfyApiKey}`,
+        },
+        body: JSON.stringify(duttyfyPayload),
+      });
+      gwResponseText = await gwResponse.text();
+      console.log(`[create-payment] DuttyFy response status=${gwResponse.status}: ${gwResponseText.substring(0, 500)}`);
+    } catch (fetchErr) {
+      console.error("[create-payment] DuttyFy fetch error:", fetchErr);
 
-    if (!lastResponse.ok) {
-      const isAuthError = lastResponse.status === 401 || lastResponse.status === 403;
+      // Log the error
+      await supabase.from("integration_logs").insert({
+        provider: "duttyfy",
+        action: "create_payment",
+        request_payload: duttyfyPayload,
+        error_message: String(fetchErr),
+        order_id: orderId,
+      });
+
       return new Response(
-        JSON.stringify({
-          error: isAuthError ? "Falha de autenticação no gateway." : `Erro no gateway (${lastResponse.status})`,
-          status: lastResponse.status, auth_strategy: lastStrategy, details: gatewayData,
-        }),
+        JSON.stringify({ error: "Não foi possível conectar ao gateway DuttyFy" }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Parse response
-    const responseData = gatewayData?.data || gatewayData;
-    const pixData = responseData?.pix || responseData?.Pix || gatewayData?.pix || gatewayData?.Pix || {};
-    const txId = responseData?.Id || responseData?.id || gatewayData?.Id || gatewayData?.id;
-    const txStatus = responseData?.Status || responseData?.status || "PENDING";
+    let gwData: any;
+    try {
+      gwData = JSON.parse(gwResponseText);
+    } catch {
+      await supabase.from("integration_logs").insert({
+        provider: "duttyfy",
+        action: "create_payment",
+        request_payload: duttyfyPayload,
+        response_payload: { raw: gwResponseText.substring(0, 2000) },
+        status_code: gwResponse.status,
+        error_message: "Invalid JSON response",
+        order_id: orderId,
+      });
 
-    const pixCode =
-      pixData?.qr_code || pixData?.QrCode || pixData?.copy_paste || pixData?.copyAndPaste ||
-      pixData?.emv || pixData?.code || responseData?.pix_code || responseData?.PixCode ||
-      responseData?.qr_code || responseData?.QrCode || gatewayData?.pix_code || gatewayData?.QrCode || "";
+      return new Response(
+        JSON.stringify({ error: "Resposta inválida do gateway", details: gwResponseText.substring(0, 500) }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    const qrCodeUrl = pixData?.qr_code_url || pixData?.QrCodeUrl || pixData?.url ||
-      responseData?.qr_code_url || responseData?.QrCodeUrl || gatewayData?.qr_code_url || "";
+    // Log the integration call
+    await supabase.from("integration_logs").insert({
+      provider: "duttyfy",
+      action: "create_payment",
+      request_payload: duttyfyPayload,
+      response_payload: gwData,
+      status_code: gwResponse.status,
+      transaction_id: gwData?.transactionId || null,
+      order_id: orderId,
+      error_message: gwResponse.ok ? null : JSON.stringify(gwData).substring(0, 500),
+    });
 
-    const qrCodeBase64 = pixData?.qr_code_base64 || pixData?.QrCodeBase64 ||
-      responseData?.qr_code_base64 || gatewayData?.qr_code_base64 || "";
+    // Handle DuttyFy errors
+    if (!gwResponse.ok) {
+      const errorMsg = gwData?.message || gwData?.error || `Erro no gateway (${gwResponse.status})`;
+      
+      // Map known DuttyFy errors
+      let userError = errorMsg;
+      if (errorMsg.toLowerCase().includes("cpf") || errorMsg.toLowerCase().includes("document")) {
+        userError = "CPF inválido. Verifique o documento informado.";
+      } else if (errorMsg.toLowerCase().includes("mínimo") || errorMsg.toLowerCase().includes("minimum")) {
+        userError = "Valor mínimo de R$ 1,00 não atingido.";
+      } else if (gwResponse.status === 401 || gwResponse.status === 403) {
+        userError = "Falha de autenticação no gateway. Verifique as credenciais.";
+      }
 
-    const expiresAt = pixData?.expires_at || pixData?.ExpiresAt ||
-      responseData?.ExpiresAt || responseData?.expires_at ||
-      gatewayData?.ExpiresAt || new Date(Date.now() + 86400 * 1000).toISOString();
+      return new Response(
+        JSON.stringify({ error: userError, details: gwData }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    const result = {
-      success: true, transaction_id: txId, status: txStatus,
-      pix_code: pixCode, qr_code_url: qrCodeUrl, qr_code_base64: qrCodeBase64,
-      amount, auth_strategy: lastStrategy, expires_at: expiresAt,
-      order_id: orderId, raw_response: gatewayData,
-    };
+    // Extract DuttyFy response fields
+    const pixCode = gwData?.pixCode || gwData?.pix_code || gwData?.qr_code || "";
+    const transactionId = gwData?.transactionId || gwData?.transaction_id || gwData?.id || "";
+    const txStatus = gwData?.status || "PENDING";
+
+    if (!transactionId) {
+      console.warn("[create-payment] No transactionId in DuttyFy response");
+    }
+
+    // Save payment_transaction record
+    await supabase.from("payment_transactions").insert({
+      order_id: orderId,
+      provider: "duttyfy",
+      transaction_id: transactionId,
+      amount: Number(amount),
+      payment_method: "PIX",
+      status_internal: "waiting_payment",
+      status_external: txStatus,
+      customer_name: customerName || null,
+      customer_document: cpfClean,
+      customer_email: customerEmail || null,
+      customer_phone: customerPhone || null,
+      item_title: `Passagem ${bookingCode}`,
+      item_price: Number(amount),
+      item_quantity: 1,
+      utm: utmParts || null,
+      raw_request: duttyfyPayload,
+      raw_response: gwData,
+      pix_code: pixCode,
+    }).then(({ error }) => {
+      if (error) console.error("[create-payment] Error saving payment_transaction:", error);
+    });
 
     // Update booking status
     await supabase.from("bookings")
-      .update({ status: "awaiting_payment", payment_method: paymentMethod, gateway_transaction_id: txId })
+      .update({ status: "awaiting_payment", payment_method: paymentMethod, gateway_transaction_id: transactionId })
       .eq("code", bookingCode);
 
-    // Save order with full attribution including _fbc/_fbp
-    const attr = attribution || {};
+    // Save order with full attribution
     await supabase.from("orders").insert({
       order_id: orderId, reservation_code: bookingCode,
       lead_id: attr.lead_id || null, session_id: attr.session_id || null,
-      visitor_id: attr.visitor_id || null, gateway_transaction_id: txId,
+      visitor_id: attr.visitor_id || null, gateway_transaction_id: transactionId,
       amount, currency: "BRL", payment_method: paymentMethod, payment_status: "pending",
       customer_name: customerName || null, customer_cpf: customerCpf || null,
       customer_email: customerEmail || null, customer_whatsapp: attr.customer_whatsapp || null,
@@ -191,7 +236,7 @@ Deno.serve(async (req) => {
       first_visit_at: attr.first_visit_at || null,
       landing_page: attr.landing_page || null, referrer: attr.referrer || null,
       buyer_score: attr.buyer_score || 0,
-      raw_gateway_response: gatewayData,
+      raw_gateway_response: gwData,
     }).then(({ error }) => {
       if (error) console.error("[create-payment] Error saving order:", error);
     });
@@ -211,7 +256,7 @@ Deno.serve(async (req) => {
             customer: {
               name: customerName || "", email: customerEmail || "",
               phone: customerPhone || "",
-              document: (customerCpf || "").replace(/\D/g, ""),
+              document: cpfClean,
             },
             trackingParameters: {
               src: attr.utm_source || null, sck: attr.fbclid || null,
@@ -230,6 +275,21 @@ Deno.serve(async (req) => {
         console.error("[create-payment] UTMify error:", utmifyErr);
       }
     }
+
+    // Normalized result for frontend
+    const result = {
+      success: true,
+      transaction_id: transactionId,
+      status: txStatus,
+      pix_code: pixCode,
+      qr_code_url: "",
+      qr_code_base64: "",
+      amount,
+      expires_at: new Date(Date.now() + 86400 * 1000).toISOString(),
+      order_id: orderId,
+      provider: "duttyfy",
+      raw_response: gwData,
+    };
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
