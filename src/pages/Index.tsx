@@ -53,6 +53,15 @@ const Index = () => {
     analytics.updateScore('PAGE_VIEW_HOME');
   }, []);
 
+  const offers1 = useMemo(() => offersDef1.map(o => ({
+    image: o.image, origem: o.origem, destino: o.destino,
+    price: calcDisplayPrice(o.origemName, o.destinoName),
+  })), []);
+
+  const offers2 = useMemo(() => offersDef2.map(o => ({
+    image: o.image, origem: o.origem, destino: o.destino,
+    price: calcDisplayPrice(o.origemName, o.destinoName),
+  })), []);
   return (
     <div className="min-h-screen bg-background">
       <Header />
