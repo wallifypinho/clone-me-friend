@@ -64,9 +64,13 @@ Deno.serve(async (req) => {
       const statusUrl = `${duttyfyUrl}?transactionId=${encodeURIComponent(transactionId)}`;
       console.log(`[check-status] Polling: ends="...${duttyfyUrl.slice(-8)}", txId=${transactionId.substring(0, 12)}...`);
 
+      const apiKey = Deno.env.get("DUTTYFY_API_KEY") || "";
+      const fetchHeaders: Record<string, string> = { Accept: "application/json" };
+      if (apiKey) fetchHeaders["x-api-key"] = apiKey;
+
       const gwRes = await fetch(statusUrl, {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: fetchHeaders,
         signal: AbortSignal.timeout(10_000),
       });
 
