@@ -13,6 +13,35 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   });
 }
 
+function getGatewayConfig() {
+  const proxyUrl = Deno.env.get("DUTTYFY_PROXY_URL")?.trim();
+  const proxySecret = Deno.env.get("DUTTYFY_PROXY_SECRET")?.trim();
+  const directUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
+
+  if (proxyUrl && proxySecret) {
+    return {
+      url: proxyUrl,
+      mode: "proxy",
+      headers: {
+        "Content-Type": "application/json",
+        "x-proxy-secret": proxySecret,
+      },
+    };
+  }
+
+  if (directUrl) {
+    return {
+      url: directUrl,
+      mode: "direct",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -50,9 +79,9 @@ Deno.serve(async (req) => {
     const phoneClean = (customerPhone || "").replace(/\D/g, "");
 
     // ── Gateway URL (Encrypted URL = endpoint + credential) ─────
-    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
-    if (!duttyfyUrl) {
-      console.error("[create-payment] DUTTYFY_ENCRYPTED_URL not configured");
+    const gatewayConfig = getGatewayConfig();
+    if (!gatewayConfig) {
+      console.error("[create-payment] DUTTYFY gateway not configured");
       return jsonResponse({ error: "Gateway de pagamento não configurado." }, 422);
     }
 
@@ -75,6 +104,7 @@ Deno.serve(async (req) => {
     // ── DuttyFy payload (amount in CENTS, no auth headers) ──────
     const gatewayPayload = {
       amount: amountCents,
+      description: `Passagem ${bookingCode}`,
       customer: {
         name: customerName || "Cliente",
         document: cpfClean,
@@ -91,7 +121,7 @@ Deno.serve(async (req) => {
     };
 
     // ── Safe logging (only last 8 chars of URL) ─────────────────
-    console.log(`[create-payment] URL: len=${duttyfyUrl.length}, ends="...${duttyfyUrl.slice(-8)}"`);
+    console.log(`[create-payment] Mode=${gatewayConfig.mode}, URL: len=${gatewayConfig.url.length}, ends="...${gatewayConfig.url.slice(-8)}"`);
     console.log(`[create-payment] Payload: booking=${bookingCode}, amount=${amountCents}cents, doc=${cpfClean.length}d, phone=${phoneClean.length}d`);
 
     // ── Call gateway with retry (exponential backoff on 5xx) ────
@@ -108,9 +138,9 @@ Deno.serve(async (req) => {
 
       try {
         // Per DuttyFy docs: NO auth headers. Encrypted URL IS the credential.
-        gwResponse = await fetch(duttyfyUrl, {
+        gwResponse = await fetch(gatewayConfig.url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: gatewayConfig.headers,
           body: JSON.stringify(gatewayPayload),
           signal: AbortSignal.timeout(15_000),
         });

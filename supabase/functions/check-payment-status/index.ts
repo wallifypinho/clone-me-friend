@@ -13,6 +13,35 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   });
 }
 
+function getStatusGatewayConfig() {
+  const proxyUrl = Deno.env.get("DUTTYFY_PROXY_URL")?.trim();
+  const proxySecret = Deno.env.get("DUTTYFY_PROXY_SECRET")?.trim();
+  const directUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
+
+  if (proxyUrl && proxySecret) {
+    return {
+      url: proxyUrl,
+      mode: "proxy",
+      headers: {
+        Accept: "application/json",
+        "x-proxy-secret": proxySecret,
+      },
+    };
+  }
+
+  if (directUrl) {
+    return {
+      url: directUrl,
+      mode: "direct",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+  }
+
+  return null;
+}
+
 function normalizeStatus(rawStatus: string): string {
   const s = (rawStatus || "").toUpperCase().trim();
   const map: Record<string, string> = {
@@ -55,19 +84,19 @@ Deno.serve(async (req) => {
     }
 
     // 2. Poll DuttyFy — Encrypted URL is both endpoint and credential
-    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
-    if (!duttyfyUrl) {
+    const gatewayConfig = getStatusGatewayConfig();
+    if (!gatewayConfig) {
       return jsonResponse({ status: order?.payment_status || "unknown", source: "database_only" });
     }
 
     try {
       // Per DuttyFy docs: GET with transactionId as query param, NO auth headers
-      const statusUrl = `${duttyfyUrl}?transactionId=${encodeURIComponent(transactionId)}`;
-      console.log(`[check-status] Polling txId=${transactionId.substring(0, 12)}..., URL ends="...${duttyfyUrl.slice(-8)}"`);
+      const statusUrl = `${gatewayConfig.url}?transactionId=${encodeURIComponent(transactionId)}`;
+      console.log(`[check-status] Polling txId=${transactionId.substring(0, 12)}..., mode=${gatewayConfig.mode}, URL ends="...${gatewayConfig.url.slice(-8)}"`);
 
       const gwRes = await fetch(statusUrl, {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: gatewayConfig.headers,
         signal: AbortSignal.timeout(10_000),
       });
 
