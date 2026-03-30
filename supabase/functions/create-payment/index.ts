@@ -108,11 +108,15 @@ Deno.serve(async (req) => {
       }
 
       try {
+        const apiKey = Deno.env.get("DUTTYFY_API_KEY") || "";
+        const fetchHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        if (apiKey) fetchHeaders["x-api-key"] = apiKey;
+
         gwResponse = await fetch(duttyfyUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: fetchHeaders,
           body: JSON.stringify(gatewayPayload),
-          signal: AbortSignal.timeout(15_000), // 15s timeout
+          signal: AbortSignal.timeout(15_000),
         });
         gwResponseText = await gwResponse.text();
         console.log(`[create-payment] Response: status=${gwResponse.status}, body=${gwResponseText.substring(0, 500)}`);
