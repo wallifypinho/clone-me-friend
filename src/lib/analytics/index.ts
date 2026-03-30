@@ -120,6 +120,8 @@ export const analytics = {
       sendToMetaPixel(eventName, enriched, isStandard);
     }
 
+    console.log(`[analytics] trackEvent: ${eventName}`, { event_id: eventId, page: window.location.pathname });
+
     // Save to internal DB (fire and forget) — all events
     saveEventToDb(eventName, eventId, enriched);
 
