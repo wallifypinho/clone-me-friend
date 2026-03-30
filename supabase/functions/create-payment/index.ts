@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
       item_title: "Serviços Digitais",
       item_price: Number(amount),
       item_quantity: 1,
-      utm: utmParts || null,
+      utm: utmRaw || null,
       raw_request: gatewayPayload,
       raw_response: gwData,
       pix_code: pixCode,
