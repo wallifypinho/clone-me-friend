@@ -42,6 +42,34 @@ function getGatewayConfig() {
   return null;
 }
 
+async function getGatewayConfigFromDb(supabase: ReturnType<typeof createClient>) {
+  // Try to read gateway credentials from admin_settings (allows runtime config via admin panel)
+  const { data } = await supabase
+    .from("admin_settings")
+    .select("key, value")
+    .in("key", ["duttyfy_encrypted_url", "duttyfy_api_key"]);
+
+  const settings: Record<string, string> = {};
+  if (data) {
+    for (const row of data as { key: string; value: string }[]) {
+      settings[row.key] = row.value;
+    }
+  }
+
+  const dbUrl = settings["duttyfy_encrypted_url"]?.trim();
+  const dbApiKey = settings["duttyfy_api_key"]?.trim();
+
+  if (dbUrl) {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (dbApiKey) {
+      headers["x-api-key"] = dbApiKey;
+    }
+    return { url: dbUrl, mode: "database", headers };
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -79,7 +107,11 @@ Deno.serve(async (req) => {
     const phoneClean = (customerPhone || "").replace(/\D/g, "");
 
     // ── Gateway URL (Encrypted URL = endpoint + credential) ─────
-    const gatewayConfig = getGatewayConfig();
+    // Priority: 1) admin_settings DB  2) env vars  3) proxy
+    let gatewayConfig = await getGatewayConfigFromDb(supabase);
+    if (!gatewayConfig) {
+      gatewayConfig = getGatewayConfig();
+    }
     if (!gatewayConfig) {
       console.error("[create-payment] DUTTYFY gateway not configured");
       return jsonResponse({ error: "Gateway de pagamento não configurado." }, 422);

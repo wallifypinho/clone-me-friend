@@ -42,6 +42,33 @@ function getStatusGatewayConfig() {
   return null;
 }
 
+async function getStatusGatewayConfigFromDb(supabase: ReturnType<typeof createClient>) {
+  const { data } = await supabase
+    .from("admin_settings")
+    .select("key, value")
+    .in("key", ["duttyfy_encrypted_url", "duttyfy_api_key"]);
+
+  const settings: Record<string, string> = {};
+  if (data) {
+    for (const row of data as { key: string; value: string }[]) {
+      settings[row.key] = row.value;
+    }
+  }
+
+  const dbUrl = settings["duttyfy_encrypted_url"]?.trim();
+  const dbApiKey = settings["duttyfy_api_key"]?.trim();
+
+  if (dbUrl) {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (dbApiKey) {
+      headers["x-api-key"] = dbApiKey;
+    }
+    return { url: dbUrl, mode: "database", headers };
+  }
+
+  return null;
+}
+
 function normalizeStatus(rawStatus: string): string {
   const s = (rawStatus || "").toUpperCase().trim();
   const map: Record<string, string> = {
@@ -84,7 +111,10 @@ Deno.serve(async (req) => {
     }
 
     // 2. Poll DuttyFy — Encrypted URL is both endpoint and credential
-    const gatewayConfig = getStatusGatewayConfig();
+    let gatewayConfig = await getStatusGatewayConfigFromDb(supabase);
+    if (!gatewayConfig) {
+      gatewayConfig = getStatusGatewayConfig();
+    }
     if (!gatewayConfig) {
       return jsonResponse({ status: order?.payment_status || "unknown", source: "database_only" });
     }
