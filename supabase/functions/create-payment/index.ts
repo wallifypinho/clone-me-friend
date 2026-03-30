@@ -124,17 +124,8 @@ Deno.serve(async (req) => {
     const orderId = `ord_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
     const attr = attribution || {};
 
-    // UTM: forward all tracking params as-is
-    const utmParts = [
-      attr.utm_source && `utm_source=${attr.utm_source}`,
-      attr.utm_medium && `utm_medium=${attr.utm_medium}`,
-      attr.utm_campaign && `utm_campaign=${attr.utm_campaign}`,
-      attr.utm_content && `utm_content=${attr.utm_content}`,
-      attr.utm_term && `utm_term=${attr.utm_term}`,
-      attr.fbclid && `fbclid=${attr.fbclid}`,
-      attr.fbp && `fbp=${attr.fbp}`,
-      attr.session_id && `sid=${attr.session_id}`,
-    ].filter(Boolean).join("&");
+    // UTM: forward raw query string from frontend as-is (per DuttyFy contract)
+    const utmRaw = (body.utm || "").trim();
 
     // ── DuttyFy payload (amount in CENTS, no auth headers) ──────
     // IMPORTANT: Only send minimal, generic info to gateway — no product details
