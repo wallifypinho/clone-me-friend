@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         quantity: 1,
       },
       paymentMethod: "PIX",
-      utm: utmParts || orderId,
+      utm: utmRaw || orderId,
     };
 
     // ── Safe logging (only last 8 chars of URL) ─────────────────
