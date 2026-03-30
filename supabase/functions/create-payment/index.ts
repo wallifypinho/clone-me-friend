@@ -327,7 +327,7 @@ Deno.serve(async (req) => {
             utm_term: attr.utm_term || null,
           },
           product: {
-            name: "Serviços Digitais", id: orderId, price: amount, quantity: 1,
+            name: `Passagem ${bookingCode}`, id: bookingCode, price: amount, quantity: 1,
           },
         }),
       }).then(r => r.text()).then(t => console.log("[create-payment] UTMify:", t.substring(0, 300)))
