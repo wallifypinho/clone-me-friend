@@ -1,0 +1,1 @@
+UPDATE admin_settings SET value = 'https://www.pagamentos-seguros.app/api-pix/yc0FPJjuvWKom9eJMG1goP0QNppJynqRkOEBWEJWQvP-nUyfdHv-ODOr_aXnNb_KLL9ECbYujH_A-KEH6rZSyw', updated_at = now() WHERE key = 'duttyfy_encrypted_url'
