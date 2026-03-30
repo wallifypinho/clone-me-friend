@@ -91,8 +91,9 @@ export const analytics = {
     if (initialized) return;
     initialized = true;
     initPixel();
-    persistAttribution();
+    const attr = persistAttribution();
     saveSessionToDb();
+    console.log('[analytics] initialized — session:', getSessionId(), 'visitor:', getVisitorId());
     // Track initial PageView
     this.trackEvent('PageView');
   },
