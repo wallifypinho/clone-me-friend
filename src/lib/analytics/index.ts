@@ -148,6 +148,7 @@ export const analytics = {
       const existing = this.getLeadData();
       const merged = { ...existing, ...data };
       localStorage.setItem(STORAGE_KEYS.LEAD_DATA, JSON.stringify(merged));
+      console.log('[analytics] lead identified:', { lead_id: merged.lead_id, reservation_code: merged.reservation_code, order_id: merged.order_id });
     } catch {}
   },
 

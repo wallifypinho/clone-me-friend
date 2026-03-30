@@ -160,6 +160,7 @@ const Confirmacao = () => {
           analytics.trackEvent('Purchase', paidPayload);
           analytics.trackEvent('OrderPaid', paidPayload);
           analytics.updateScore('PURCHASE_COMPLETED');
+          console.log('[analytics] purchase tracked:', { event_id: paidPayload.event_id, order_id: paidPayload.order_id, value: total, fbc: paidPayload.fbc, fbp: paidPayload.fbp });
 
           toast.success("Pagamento confirmado!");
         }

@@ -161,10 +161,9 @@ const Pagamento = () => {
         return;
       }
 
-      console.log("Gateway response:", data);
-
       // Store order_id in lead chain for auto-enrichment
       const orderId = data?.order_id || bookingCode;
+      console.log('[payment] payload sent — order_id:', orderId, 'transaction_id:', data?.transaction_id, 'pixCode:', data?.pix_code ? 'yes' : 'no');
       analytics.identifyLead({ order_id: orderId, reservation_code: bookingCode });
 
       // PaymentGenerated: custom Meta event — payment/PIX was generated
