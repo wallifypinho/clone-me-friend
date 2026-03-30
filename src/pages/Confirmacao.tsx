@@ -116,6 +116,7 @@ const Confirmacao = () => {
           clearInterval(pollInterval);
 
           const attrData = analytics.getAttributionData();
+          console.log('[payment] confirmed! order_id:', orderId || transactionId, 'purchase_event_id:', purchaseEventId || '(browser-generated)');
 
           const paidPayload: Record<string, any> = {
             value: total,
@@ -126,19 +127,30 @@ const Confirmacao = () => {
             transaction_id: transactionId,
             gateway_transaction_id: transactionId,
             session_id: analytics.getSessionId(),
+            visitor_id: analytics.getVisitorId(),
             lead_id: analytics.getLeadData()?.lead_id || null,
             paid_at: paidAt || new Date().toISOString(),
             payment_status: 'paid',
+            // Full attribution chain from original click
             utm_source: attrData?.utm_source || null,
             utm_medium: attrData?.utm_medium || null,
             utm_campaign: attrData?.utm_campaign || null,
             utm_content: attrData?.utm_content || null,
             utm_term: attrData?.utm_term || null,
             fbclid: attrData?.fbclid || null,
+            gclid: attrData?.gclid || null,
             fbc: attrData?.fbc || null,
             fbp: attrData?.fbp || null,
             campaign_name: attrData?.campaign_name || null,
             campaign_id: attrData?.campaign_id || null,
+            adset_name: attrData?.adset_name || null,
+            adset_id: attrData?.adset_id || null,
+            ad_name: attrData?.ad_name || null,
+            ad_id: attrData?.ad_id || null,
+            placement: attrData?.placement || null,
+            landing_page: attrData?.landing_page || null,
+            referrer: attrData?.referrer || null,
+            first_visit_at: attrData?.first_visit_at || null,
           };
 
           if (purchaseEventId) {
