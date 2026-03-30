@@ -54,28 +54,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2. Poll DuttyFy (proxy-first, fallback to direct)
-    const proxyUrl = Deno.env.get("DUTTYFY_PROXY_URL")?.trim();
-    const proxySecret = Deno.env.get("DUTTYFY_PROXY_SECRET")?.trim();
-    const directUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
-    const baseUrl = proxyUrl || directUrl;
-    const useProxy = !!proxyUrl && !!proxySecret;
-    if (!baseUrl) {
+    // 2. Poll DuttyFy — Encrypted URL is both endpoint and credential
+    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
+    if (!duttyfyUrl) {
       return jsonResponse({ status: order?.payment_status || "unknown", source: "database_only" });
     }
 
     try {
-      const statusUrl = `${baseUrl}?transactionId=${encodeURIComponent(transactionId)}`;
-      console.log(`[check-status] Polling via ${useProxy ? "PROXY" : "DIRECT"}, txId=${transactionId.substring(0, 12)}...`);
-
-      const apiKey = Deno.env.get("DUTTYFY_API_KEY") || "";
-      const fetchHeaders: Record<string, string> = { Accept: "application/json" };
-      if (apiKey) fetchHeaders["x-api-key"] = apiKey;
-      if (useProxy && proxySecret) fetchHeaders["x-proxy-secret"] = proxySecret;
+      // Per DuttyFy docs: GET with transactionId as query param, NO auth headers
+      const statusUrl = `${duttyfyUrl}?transactionId=${encodeURIComponent(transactionId)}`;
+      console.log(`[check-status] Polling txId=${transactionId.substring(0, 12)}..., URL ends="...${duttyfyUrl.slice(-8)}"`);
 
       const gwRes = await fetch(statusUrl, {
         method: "GET",
-        headers: fetchHeaders,
+        headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(10_000),
       });
 
@@ -98,7 +90,7 @@ Deno.serve(async (req) => {
         const normalized = normalizeStatus(rawStatus);
         const paidAt = (gwData?.paidAt || gwData?.paid_at || null) as string | null;
 
-        // Gateway says paid but DB doesn't know → update via conditional UPDATE
+        // Gateway says paid but DB doesn't know → conditional UPDATE (never INSERT OR REPLACE)
         if (normalized === "paid" && order?.payment_status !== "paid") {
           const eventId = `poll_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
           const paidAtTs = paidAt ? new Date(paidAt).toISOString() : new Date().toISOString();
