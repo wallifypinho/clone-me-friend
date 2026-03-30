@@ -54,19 +54,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2. Poll DuttyFy via GET on the same encrypted URL
-    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
-    if (!duttyfyUrl) {
+    // 2. Poll DuttyFy (proxy-first, fallback to direct)
+    const proxyUrl = Deno.env.get("DUTTYFY_PROXY_URL")?.trim();
+    const proxySecret = Deno.env.get("DUTTYFY_PROXY_SECRET")?.trim();
+    const directUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
+    const baseUrl = proxyUrl || directUrl;
+    const useProxy = !!proxyUrl && !!proxySecret;
+    if (!baseUrl) {
       return jsonResponse({ status: order?.payment_status || "unknown", source: "database_only" });
     }
 
     try {
-      const statusUrl = `${duttyfyUrl}?transactionId=${encodeURIComponent(transactionId)}`;
-      console.log(`[check-status] Polling: ends="...${duttyfyUrl.slice(-8)}", txId=${transactionId.substring(0, 12)}...`);
+      const statusUrl = `${baseUrl}?transactionId=${encodeURIComponent(transactionId)}`;
+      console.log(`[check-status] Polling via ${useProxy ? "PROXY" : "DIRECT"}, txId=${transactionId.substring(0, 12)}...`);
 
       const apiKey = Deno.env.get("DUTTYFY_API_KEY") || "";
       const fetchHeaders: Record<string, string> = { Accept: "application/json" };
       if (apiKey) fetchHeaders["x-api-key"] = apiKey;
+      if (useProxy && proxySecret) fetchHeaders["x-proxy-secret"] = proxySecret;
 
       const gwRes = await fetch(statusUrl, {
         method: "GET",
