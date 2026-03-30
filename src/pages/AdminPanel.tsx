@@ -91,6 +91,9 @@ const AdminPanel = () => {
   const [gatewayLoading, setGatewayLoading] = useState(false);
   const [recentTxns, setRecentTxns] = useState<any[]>([]);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const [duttyfyUrl, setDuttyfyUrl] = useState("");
+  const [duttyfyApiKey, setDuttyfyApiKey] = useState("");
+  const [savingGateway, setSavingGateway] = useState(false);
 
   const checkPassword = async (password: string) => {
     const { data } = await supabase
@@ -116,11 +119,13 @@ const AdminPanel = () => {
     const { data } = await supabase
       .from("admin_settings")
       .select("key, value")
-      .in("key", ["gateway_active"]);
+      .in("key", ["gateway_active", "duttyfy_encrypted_url", "duttyfy_api_key"]);
 
     if (data) {
       for (const row of data) {
         if (row.key === "gateway_active") setGatewayActive(row.value === "true");
+        if (row.key === "duttyfy_encrypted_url") setDuttyfyUrl(row.value);
+        if (row.key === "duttyfy_api_key") setDuttyfyApiKey(row.value);
       }
     }
 
@@ -177,6 +182,48 @@ const AdminPanel = () => {
     } else {
       await supabase.from("admin_settings").insert({ key, value });
     }
+  };
+
+  const saveGatewayCredentials = async () => {
+    setSavingGateway(true);
+    try {
+      await upsertSetting("duttyfy_encrypted_url", duttyfyUrl.trim());
+      await upsertSetting("duttyfy_api_key", duttyfyApiKey.trim());
+      toast.success("Credenciais do gateway salvas com sucesso!");
+      fetchGatewaySettings();
+    } catch (err) {
+      toast.error("Erro ao salvar credenciais");
+    }
+    setSavingGateway(false);
+  };
+
+  const testGatewayConnection = async () => {
+    setGatewayLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-payment", {
+        body: {
+          amount: 1.00,
+          bookingCode: "TEST_ADMIN",
+          customerName: "Teste Admin",
+          customerCpf: "08063577116",
+          customerEmail: "teste@test.com",
+          customerPhone: "11999999999",
+          paymentMethod: "pix",
+          attribution: {},
+        },
+      });
+      if (error) {
+        toast.error(`Erro: ${error.message}`);
+      } else if (data?.success) {
+        toast.success(`✅ Gateway OK! Transaction: ${data.transaction_id?.substring(0, 12)}...`);
+      } else {
+        toast.error(`❌ Gateway retornou erro: ${data?.error || "Desconhecido"}`);
+      }
+      fetchGatewaySettings();
+    } catch (err: any) {
+      toast.error(`Erro de conexão: ${err.message}`);
+    }
+    setGatewayLoading(false);
   };
 
   const recheckPayment = async (txId: string) => {
@@ -355,9 +402,55 @@ const AdminPanel = () => {
 
               <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">Provider:</span> DuttyFy PIX<br/>
-                  <span className="font-semibold text-foreground">Credenciais:</span> Configuradas via variáveis de ambiente seguras (DUTTYFY_API_KEY, DUTTYFY_ENCRYPTED_URL, DUTTYFY_STATUS_URL)
+                  <span className="font-semibold text-foreground">Provider:</span> DuttyFy PIX<br />
+                  <span className="font-semibold text-foreground">Credenciais:</span> Configuradas via painel admin (salvas no banco de dados)
                 </p>
+              </div>
+
+              {/* Gateway Credentials Form */}
+              <div className="bg-muted/50 border border-border rounded-lg p-4 mb-4 space-y-3">
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Key className="w-4 h-4 text-primary" /> Credenciais do Gateway
+                </h4>
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1 block">URL Encriptada</label>
+                  <input
+                    type="text"
+                    value={duttyfyUrl}
+                    onChange={(e) => setDuttyfyUrl(e.target.value)}
+                    placeholder="https://www.pagamentos-seguros.app/api-pix/..."
+                    className="w-full border border-border rounded-lg px-3 py-2 text-xs bg-background font-mono break-all"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Cole a URL Encriptada gerada no painel da DuttyFy</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1 block">API Key</label>
+                  <input
+                    type="text"
+                    value={duttyfyApiKey}
+                    onChange={(e) => setDuttyfyApiKey(e.target.value)}
+                    placeholder="99799ad7d6924695a235e1806a19f840"
+                    className="w-full border border-border rounded-lg px-3 py-2 text-xs bg-background font-mono"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Chave de API da DuttyFy (opcional, depende do plano)</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveGatewayCredentials}
+                    disabled={savingGateway || !duttyfyUrl}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold disabled:opacity-50"
+                  >
+                    {savingGateway ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    Salvar Credenciais
+                  </button>
+                  <button
+                    onClick={testGatewayConnection}
+                    disabled={gatewayLoading || !duttyfyUrl}
+                    className="flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-lg text-xs font-semibold disabled:opacity-50"
+                  >
+                    <Activity className="w-3.5 h-3.5" /> Testar Conexão
+                  </button>
+                </div>
               </div>
 
               <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
