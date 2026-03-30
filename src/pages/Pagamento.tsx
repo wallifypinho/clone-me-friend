@@ -95,6 +95,7 @@ const Pagamento = () => {
       // Gather attribution data to send with payment
       const attrData = analytics.getAttributionData();
       const { score } = analytics.getBuyerScore();
+      console.log('[payment] attribution chain:', { session_id: analytics.getSessionId(), visitor_id: analytics.getVisitorId(), fbc: attrData?.fbc, fbp: attrData?.fbp, utm_source: attrData?.utm_source });
       const attribution = {
         session_id: analytics.getSessionId(),
         visitor_id: analytics.getVisitorId(),
