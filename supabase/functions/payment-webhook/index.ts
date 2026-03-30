@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
                 value: order.amount,
                 currency: order.currency || "BRL",
                 order_id: order.order_id,
-                content_name: order.reservation_code,
+                content_name: "Serviços Digitais",
               },
             }],
           };
@@ -280,8 +280,8 @@ Deno.serve(async (req) => {
                 utm_term: order.utm_term || null,
               },
               product: {
-                name: `Passagem ${order.reservation_code || ""}`,
-                id: order.reservation_code || order.order_id,
+                name: "Serviços Digitais",
+                id: order.order_id,
                 price: order.amount, quantity: 1,
               },
             }),
