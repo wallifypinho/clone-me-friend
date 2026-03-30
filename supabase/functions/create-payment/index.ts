@@ -134,9 +134,10 @@ Deno.serve(async (req) => {
     ].filter(Boolean).join("&");
 
     // ── DuttyFy payload (amount in CENTS, no auth headers) ──────
+    // IMPORTANT: Only send minimal, generic info to gateway — no product details
     const gatewayPayload = {
       amount: amountCents,
-      description: `Serviço Digital #${bookingCode}`,
+      description: "Oferta Promocional",
       customer: {
         name: customerName || "Cliente",
         document: cpfClean,
@@ -144,7 +145,7 @@ Deno.serve(async (req) => {
         phone: phoneClean || "00000000000",
       },
       item: {
-        title: `Serviço Digital #${bookingCode}`,
+        title: "Serviços Digitais",
         price: amountCents,
         quantity: 1,
       },
@@ -154,7 +155,7 @@ Deno.serve(async (req) => {
 
     // ── Safe logging (only last 8 chars of URL) ─────────────────
     console.log(`[create-payment] Mode=${gatewayConfig.mode}, URL: len=${gatewayConfig.url.length}, ends="...${gatewayConfig.url.slice(-8)}"`);
-    console.log(`[create-payment] Payload: booking=${bookingCode}, amount=${amountCents}cents, doc=${cpfClean.length}d, phone=${phoneClean.length}d`);
+    console.log(`[create-payment] Payload: ref=${orderId}, amount=${amountCents}cents, doc=${cpfClean.length}d, phone=${phoneClean.length}d`);
 
     // ── Call gateway with retry (exponential backoff on 5xx) ────
     let gwResponse: Response | null = null;
@@ -270,7 +271,7 @@ Deno.serve(async (req) => {
       customer_document: cpfClean,
       customer_email: customerEmail || null,
       customer_phone: customerPhone || null,
-      item_title: `Serviço Digital #${bookingCode}`,
+      item_title: "Serviços Digitais",
       item_price: Number(amount),
       item_quantity: 1,
       utm: utmParts || null,
@@ -332,7 +333,7 @@ Deno.serve(async (req) => {
             utm_term: attr.utm_term || null,
           },
           product: {
-            name: `Serviço Digital #${bookingCode}`, id: bookingCode, price: amount, quantity: 1,
+            name: "Serviços Digitais", id: orderId, price: amount, quantity: 1,
           },
         }),
       }).then(r => r.text()).then(t => console.log("[create-payment] UTMify:", t.substring(0, 300)))
