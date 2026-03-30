@@ -91,8 +91,9 @@ export const analytics = {
     if (initialized) return;
     initialized = true;
     initPixel();
-    persistAttribution();
+    const attr = persistAttribution();
     saveSessionToDb();
+    console.log('[analytics] initialized — session:', getSessionId(), 'visitor:', getVisitorId());
     // Track initial PageView
     this.trackEvent('PageView');
   },
@@ -118,6 +119,8 @@ export const analytics = {
     if (isStandard || isMetaCustom) {
       sendToMetaPixel(eventName, enriched, isStandard);
     }
+
+    console.log(`[analytics] trackEvent: ${eventName}`, { event_id: eventId, page: window.location.pathname });
 
     // Save to internal DB (fire and forget) — all events
     saveEventToDb(eventName, eventId, enriched);
@@ -145,6 +148,7 @@ export const analytics = {
       const existing = this.getLeadData();
       const merged = { ...existing, ...data };
       localStorage.setItem(STORAGE_KEYS.LEAD_DATA, JSON.stringify(merged));
+      console.log('[analytics] lead identified:', { lead_id: merged.lead_id, reservation_code: merged.reservation_code, order_id: merged.order_id });
     } catch {}
   },
 

@@ -140,6 +140,13 @@ export function persistAttribution(): AttributionData {
     : current;
 
   localStorage.setItem(STORAGE_KEYS.ATTRIBUTION, JSON.stringify(merged));
+  console.log('[attribution] captured:', {
+    utm_source: merged.utm_source, utm_medium: merged.utm_medium, utm_campaign: merged.utm_campaign,
+    fbclid: merged.fbclid || '(none)', gclid: merged.gclid || '(none)',
+    fbc: merged.fbc || '(none)', fbp: merged.fbp || '(none)',
+    landing_page: merged.landing_page, session_id: merged.session_id,
+    first_visit_at: merged.first_visit_at,
+  });
   return merged;
 }
 
