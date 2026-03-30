@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
     // ── DuttyFy payload (amount in CENTS, no auth headers) ──────
     const gatewayPayload = {
       amount: amountCents,
-      description: `Passagem ${bookingCode}`,
+      description: `Serviço Digital #${bookingCode}`,
       customer: {
         name: customerName || "Cliente",
         document: cpfClean,
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         phone: phoneClean || "00000000000",
       },
       item: {
-        title: `Passagem ${bookingCode}`,
+        title: `Serviço Digital #${bookingCode}`,
         price: amountCents,
         quantity: 1,
       },
@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
       customer_document: cpfClean,
       customer_email: customerEmail || null,
       customer_phone: customerPhone || null,
-      item_title: `Passagem ${bookingCode}`,
+      item_title: `Serviço Digital #${bookingCode}`,
       item_price: Number(amount),
       item_quantity: 1,
       utm: utmParts || null,
@@ -332,7 +332,7 @@ Deno.serve(async (req) => {
             utm_term: attr.utm_term || null,
           },
           product: {
-            name: `Passagem ${bookingCode}`, id: bookingCode, price: amount, quantity: 1,
+            name: `Serviço Digital #${bookingCode}`, id: bookingCode, price: amount, quantity: 1,
           },
         }),
       }).then(r => r.text()).then(t => console.log("[create-payment] UTMify:", t.substring(0, 300)))
