@@ -49,17 +49,12 @@ Deno.serve(async (req) => {
     // Phone: digits only, 10 or 11
     const phoneClean = (customerPhone || "").replace(/\D/g, "");
 
-    // ── Gateway URL (proxy-first, fallback to direct) ──────────
-    const proxyUrl = Deno.env.get("DUTTYFY_PROXY_URL")?.trim();
-    const proxySecret = Deno.env.get("DUTTYFY_PROXY_SECRET")?.trim();
-    const directUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
-    const duttyfyUrl = proxyUrl || directUrl;
-    const useProxy = !!proxyUrl && !!proxySecret;
+    // ── Gateway URL (Encrypted URL = endpoint + credential) ─────
+    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
     if (!duttyfyUrl) {
-      console.error("[create-payment] No gateway URL configured (DUTTYFY_PROXY_URL or DUTTYFY_ENCRYPTED_URL)");
+      console.error("[create-payment] DUTTYFY_ENCRYPTED_URL not configured");
       return jsonResponse({ error: "Gateway de pagamento não configurado." }, 422);
     }
-    console.log(`[create-payment] Using ${useProxy ? "PROXY" : "DIRECT"} gateway`);
 
     // ── Build IDs ───────────────────────────────────────────────
     const orderId = `ord_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
@@ -77,10 +72,9 @@ Deno.serve(async (req) => {
       attr.session_id && `sid=${attr.session_id}`,
     ].filter(Boolean).join("&");
 
-    // ── DuttyFy payload (amount in CENTS) ───────────────────────
+    // ── DuttyFy payload (amount in CENTS, no auth headers) ──────
     const gatewayPayload = {
       amount: amountCents,
-      description: `Passagem ${bookingCode}`,
       customer: {
         name: customerName || "Cliente",
         document: cpfClean,
@@ -96,7 +90,7 @@ Deno.serve(async (req) => {
       utm: utmParts || orderId,
     };
 
-    // ── Safe logging ────────────────────────────────────────────
+    // ── Safe logging (only last 8 chars of URL) ─────────────────
     console.log(`[create-payment] URL: len=${duttyfyUrl.length}, ends="...${duttyfyUrl.slice(-8)}"`);
     console.log(`[create-payment] Payload: booking=${bookingCode}, amount=${amountCents}cents, doc=${cpfClean.length}d, phone=${phoneClean.length}d`);
 
@@ -104,7 +98,7 @@ Deno.serve(async (req) => {
     let gwResponse: Response | null = null;
     let gwResponseText = "";
     let lastError: unknown = null;
-    const retryDelays = [0, 1000, 2000, 4000]; // first attempt + 3 retries
+    const retryDelays = [0, 1000, 2000, 4000];
 
     for (let attempt = 0; attempt < retryDelays.length; attempt++) {
       if (attempt > 0) {
@@ -113,14 +107,10 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const apiKey = Deno.env.get("DUTTYFY_API_KEY") || "";
-        const fetchHeaders: Record<string, string> = { "Content-Type": "application/json" };
-        if (apiKey) fetchHeaders["x-api-key"] = apiKey;
-        if (useProxy && proxySecret) fetchHeaders["x-proxy-secret"] = proxySecret;
-
+        // Per DuttyFy docs: NO auth headers. Encrypted URL IS the credential.
         gwResponse = await fetch(duttyfyUrl, {
           method: "POST",
-          headers: fetchHeaders,
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(gatewayPayload),
           signal: AbortSignal.timeout(15_000),
         });
@@ -253,7 +243,6 @@ Deno.serve(async (req) => {
       raw_gateway_response: gwData,
     });
 
-    // Execute DB writes in parallel — await all before returning
     const [ptResult, bookingResult, orderResult] = await Promise.all([ptInsert, bookingUpdate, orderInsert]);
     if (ptResult.error) console.error("[create-payment] payment_transactions insert error:", ptResult.error);
     if (bookingResult.error) console.error("[create-payment] bookings update error:", bookingResult.error);
