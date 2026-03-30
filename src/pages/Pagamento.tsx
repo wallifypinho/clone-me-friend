@@ -129,6 +129,9 @@ const Pagamento = () => {
         order_id: undefined,
       });
 
+      // Capture raw query string from current URL for UTM forwarding (per DuttyFy contract)
+      const rawUtm = window.location.search.replace(/^\?/, "");
+
       const { data, error } = await supabase.functions.invoke("create-payment", {
         body: {
           amount: total,
@@ -139,6 +142,7 @@ const Pagamento = () => {
           customerPhone: whatsapp,
           paymentMethod: method,
           attribution,
+          utm: rawUtm,
         },
       });
 

@@ -103,8 +103,11 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "CPF/CNPJ inválido. Verifique o documento informado." }, 400);
     }
 
-    // Phone: digits only, 10 or 11
+    // Phone: digits only, 10 or 11 (required by DuttyFy)
     const phoneClean = (customerPhone || "").replace(/\D/g, "");
+    if (phoneClean.length !== 10 && phoneClean.length !== 11) {
+      return jsonResponse({ error: "Telefone inválido. Informe DDD + número (10 ou 11 dígitos)." }, 400);
+    }
 
     // ── Gateway URL (Encrypted URL = endpoint + credential) ─────
     // Priority: 1) admin_settings DB  2) env vars  3) proxy
@@ -121,17 +124,8 @@ Deno.serve(async (req) => {
     const orderId = `ord_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
     const attr = attribution || {};
 
-    // UTM: forward all tracking params as-is
-    const utmParts = [
-      attr.utm_source && `utm_source=${attr.utm_source}`,
-      attr.utm_medium && `utm_medium=${attr.utm_medium}`,
-      attr.utm_campaign && `utm_campaign=${attr.utm_campaign}`,
-      attr.utm_content && `utm_content=${attr.utm_content}`,
-      attr.utm_term && `utm_term=${attr.utm_term}`,
-      attr.fbclid && `fbclid=${attr.fbclid}`,
-      attr.fbp && `fbp=${attr.fbp}`,
-      attr.session_id && `sid=${attr.session_id}`,
-    ].filter(Boolean).join("&");
+    // UTM: forward raw query string from frontend as-is (per DuttyFy contract)
+    const utmRaw = (body.utm || "").trim();
 
     // ── DuttyFy payload (amount in CENTS, no auth headers) ──────
     // IMPORTANT: Only send minimal, generic info to gateway — no product details
@@ -150,7 +144,7 @@ Deno.serve(async (req) => {
         quantity: 1,
       },
       paymentMethod: "PIX",
-      utm: utmParts || orderId,
+      utm: utmRaw || orderId,
     };
 
     // ── Safe logging (only last 8 chars of URL) ─────────────────
@@ -274,7 +268,7 @@ Deno.serve(async (req) => {
       item_title: "Serviços Digitais",
       item_price: Number(amount),
       item_quantity: 1,
-      utm: utmParts || null,
+      utm: utmRaw || null,
       raw_request: gatewayPayload,
       raw_response: gwData,
       pix_code: pixCode,
@@ -333,7 +327,7 @@ Deno.serve(async (req) => {
             utm_term: attr.utm_term || null,
           },
           product: {
-            name: "Serviços Digitais", id: orderId, price: amount, quantity: 1,
+            name: `Passagem ${bookingCode}`, id: bookingCode, price: amount, quantity: 1,
           },
         }),
       }).then(r => r.text()).then(t => console.log("[create-payment] UTMify:", t.substring(0, 300)))
