@@ -103,8 +103,11 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "CPF/CNPJ inválido. Verifique o documento informado." }, 400);
     }
 
-    // Phone: digits only, 10 or 11
+    // Phone: digits only, 10 or 11 (required by DuttyFy)
     const phoneClean = (customerPhone || "").replace(/\D/g, "");
+    if (phoneClean.length !== 10 && phoneClean.length !== 11) {
+      return jsonResponse({ error: "Telefone inválido. Informe DDD + número (10 ou 11 dígitos)." }, 400);
+    }
 
     // ── Gateway URL (Encrypted URL = endpoint + credential) ─────
     // Priority: 1) admin_settings DB  2) env vars  3) proxy
