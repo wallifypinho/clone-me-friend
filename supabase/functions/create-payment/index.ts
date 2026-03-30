@@ -49,12 +49,17 @@ Deno.serve(async (req) => {
     // Phone: digits only, 10 or 11
     const phoneClean = (customerPhone || "").replace(/\D/g, "");
 
-    // ── Gateway URL ─────────────────────────────────────────────
-    const duttyfyUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
+    // ── Gateway URL (proxy-first, fallback to direct) ──────────
+    const proxyUrl = Deno.env.get("DUTTYFY_PROXY_URL")?.trim();
+    const proxySecret = Deno.env.get("DUTTYFY_PROXY_SECRET")?.trim();
+    const directUrl = Deno.env.get("DUTTYFY_ENCRYPTED_URL")?.trim();
+    const duttyfyUrl = proxyUrl || directUrl;
+    const useProxy = !!proxyUrl && !!proxySecret;
     if (!duttyfyUrl) {
-      console.error("[create-payment] DUTTYFY_ENCRYPTED_URL not configured");
+      console.error("[create-payment] No gateway URL configured (DUTTYFY_PROXY_URL or DUTTYFY_ENCRYPTED_URL)");
       return jsonResponse({ error: "Gateway de pagamento não configurado." }, 422);
     }
+    console.log(`[create-payment] Using ${useProxy ? "PROXY" : "DIRECT"} gateway`);
 
     // ── Build IDs ───────────────────────────────────────────────
     const orderId = `ord_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
@@ -111,6 +116,7 @@ Deno.serve(async (req) => {
         const apiKey = Deno.env.get("DUTTYFY_API_KEY") || "";
         const fetchHeaders: Record<string, string> = { "Content-Type": "application/json" };
         if (apiKey) fetchHeaders["x-api-key"] = apiKey;
+        if (useProxy && proxySecret) fetchHeaders["x-proxy-secret"] = proxySecret;
 
         gwResponse = await fetch(duttyfyUrl, {
           method: "POST",

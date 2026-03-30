@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/((?!assets|favicon|robots|placeholder).*)", "destination": "/index.html" }
+    { "source": "/api/duttyfy-proxy", "destination": "/api/duttyfy-proxy" },
+    { "source": "/((?!api|assets|favicon|robots|placeholder).*)", "destination": "/index.html" }
   ]
 }
