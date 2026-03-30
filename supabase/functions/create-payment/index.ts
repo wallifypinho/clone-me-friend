@@ -60,10 +60,8 @@ async function getGatewayConfigFromDb(supabase: ReturnType<typeof createClient>)
   const dbApiKey = settings["duttyfy_api_key"]?.trim();
 
   if (dbUrl) {
+    // Per DuttyFy contract: NO auth headers. Encrypted URL IS the credential.
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (dbApiKey) {
-      headers["x-api-key"] = dbApiKey;
-    }
     return { url: dbUrl, mode: "database", headers };
   }
 
