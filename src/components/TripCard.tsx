@@ -52,13 +52,13 @@ const TripCard = ({ trip }: TripCardProps) => {
         </div>
 
         <div className="flex items-center justify-between mb-1">
-          <div className="text-center">
+          <div className="text-center shrink-0">
             <p className="text-2xl font-bold text-foreground">{trip.departure}</p>
-            <p className="text-xs text-muted-foreground">{trip.origin}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[100px]">{trip.origin}</p>
           </div>
-          <div className="flex-1 mx-4 flex flex-col items-center">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-              <Clock className="w-3 h-3" />
+          <div className="flex-1 mx-4 flex flex-col items-center overflow-hidden min-w-0">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1 whitespace-nowrap">
+              <Clock className="w-3 h-3 shrink-0" />
               {trip.duration}
             </div>
             <div className="w-full flex items-center">
@@ -67,9 +67,9 @@ const TripCard = ({ trip }: TripCardProps) => {
               <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
             </div>
           </div>
-          <div className="text-center">
+          <div className="text-center shrink-0">
             <p className="text-2xl font-bold text-foreground">{trip.arrival}</p>
-            <p className="text-xs text-muted-foreground">{trip.destination}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[100px]">{trip.destination}</p>
           </div>
         </div>
       </div>
