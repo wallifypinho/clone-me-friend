@@ -206,6 +206,48 @@ const Pagamento = () => {
         currency: 'BRL',
       });
 
+      // Fire reservation email (non-blocking — never interrupts checkout)
+      if (method === "pix" && email) {
+        try {
+          const emailPayload = {
+            to: email,
+            data: {
+              brand_name: "Passagens Online",
+              carrier_name: company,
+              origin_city: origem,
+              destination_city: destino,
+              departure_date: data_viagem,
+              departure_time: departure,
+              arrival_time: arrival,
+              seat_number: seats,
+              service_type: seatType || "Convencional",
+              locator_code: bookingCode,
+              reservation_code: bookingCode,
+              passenger_name: nome,
+              passenger_document: cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"),
+              fare_amount: price,
+              total_amount: total,
+              payment_method: "pix",
+              payment_status: "AGUARDANDO PAGAMENTO",
+              reservation_status: "awaiting_payment",
+              order_id: orderId,
+              issue_date: new Date().toLocaleDateString("pt-BR"),
+              payment_link: data?.pix_code ? undefined : undefined,
+            },
+          };
+          fetch("/api/send-reservation-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(emailPayload),
+          })
+            .then((r) => r.json())
+            .then((r) => console.log("[email] reservation email sent:", r))
+            .catch((e) => console.warn("[email] failed (non-blocking):", e));
+        } catch (emailErr) {
+          console.warn("[email] error building payload:", emailErr);
+        }
+      }
+
       // Navigate to confirmation with payment data
       const params = new URLSearchParams(searchParams);
       params.set("paymentMethod", method);
