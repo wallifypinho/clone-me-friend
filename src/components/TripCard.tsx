@@ -90,7 +90,7 @@ const TripCard = ({ trip }: TripCardProps) => {
               <p className="text-xs text-muted-foreground line-through">
                 R$ {trip.originalPrice.toFixed(2).replace(".", ",")}
               </p>
-              <p className="text-xl font-bold text-foreground">
+              <p className="text-xl font-bold text-foreground whitespace-nowrap">
                 R$ {trip.discountedPrice.toFixed(2).replace(".", ",")}
               </p>
             </div>
