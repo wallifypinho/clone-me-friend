@@ -70,13 +70,13 @@ const Index = () => {
 
       {/* Hero + Search */}
       <section className="relative">
-        {/* Purple gradient banner - extends behind the search form */}
-        <div className="brand-gradient-hero relative overflow-hidden pb-40 md:pb-52">
+        {/* Purple gradient that extends behind the search form */}
+        <div className="brand-gradient-hero relative overflow-hidden pb-28 md:pb-40">
           <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/[0.06]" />
           <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-white/[0.04]" />
 
-          {/* Promo banner image - full width, no container constraint */}
-          <div className="relative z-10 px-0">
+          {/* Promo banner image */}
+          <div className="relative z-10">
             <img
               src={promoBanner}
               alt="Promoção 15% OFF - Cupom COMPROUCOM15"
@@ -85,8 +85,8 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Search card overlapping the purple background */}
-        <div className="relative z-20 -mt-36 md:-mt-44 pb-2">
+        {/* Search card overlapping purple → white transition */}
+        <div className="relative z-20 -mt-24 md:-mt-32 pb-2">
           <div className="container px-4">
             <SearchForm />
           </div>
