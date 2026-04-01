@@ -69,8 +69,8 @@ const Index = () => {
       <Header />
 
       {/* Hero + Search */}
-      <section className="relative pb-48 md:pb-56">
-        {/* Purple gradient with banner image */}
+      <section className="relative">
+        {/* Purple gradient banner - compact height */}
         <div className="brand-gradient-hero relative overflow-hidden">
           <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/[0.06]" />
           <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-white/[0.04]" />
@@ -81,8 +81,8 @@ const Index = () => {
           />
         </div>
 
-        {/* Search form positioned half on purple, half on white */}
-        <div className="absolute left-0 right-0 bottom-0 z-20 translate-y-1/2">
+        {/* Search form - pulls up into the banner */}
+        <div className="relative z-20 -mt-8 md:-mt-12 pb-4">
           <div className="container px-4">
             <SearchForm />
           </div>
