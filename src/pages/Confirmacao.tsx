@@ -289,12 +289,14 @@ const Confirmacao = () => {
           total={total}
           cnpj={companyDetails?.cnpj || undefined}
           cidadeEstado={companyDetails?.cidade && companyDetails?.estado ? `${companyDetails.cidade} - ${companyDetails.estado}` : undefined}
+          logo={companyDetails?.logo || undefined}
         />
 
         {/* Hidden thermal ticket for PDF export */}
         <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
           <ThermalTicket
             companyName={companyDetails?.razao_social || company || "VIAÇÃO EXEMPLO S.A."}
+            companyLogo={companyDetails?.logo || undefined}
             companyCnpj={companyDetails?.cnpj || undefined}
             companyAddress={companyDetails?.cidade && companyDetails?.estado ? `${companyDetails.cidade} - ${companyDetails.estado}` : undefined}
             origem={origem}
@@ -415,12 +417,12 @@ const formatCPF = (v: string) => {
 
 const BoardingTicket = ({
   code, origem, destino, departure, arrival, data, company,
-  nome, cpf, seats, seatType, total, cnpj, cidadeEstado,
+  nome, cpf, seats, seatType, total, cnpj, cidadeEstado, logo,
 }: {
   code: string; origem: string; destino: string; departure: string;
   arrival: string; data: string; company: string; nome: string;
   cpf: string; seats: string; seatType: string; total: number;
-  cnpj?: string; cidadeEstado?: string;
+  cnpj?: string; cidadeEstado?: string; logo?: string;
 }) => (
   <div className="bg-card rounded-2xl border-2 border-primary overflow-hidden">
     <div className="bg-primary/10 px-5 py-3 flex items-center justify-between">
@@ -432,7 +434,12 @@ const BoardingTicket = ({
     </div>
 
     <div className="p-5">
-      <div className="flex items-center justify-between mb-4">
+    {logo && logo.startsWith("http") && (
+      <div className="flex justify-center mb-3">
+        <img src={logo} alt={company} className="h-8 max-w-[140px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+      </div>
+    )}
+    <div className="flex items-center justify-between mb-4">
         <div className="text-center">
           <p className="text-xs text-muted-foreground uppercase">Origem</p>
           <p className="font-bold text-foreground">{origem}</p>

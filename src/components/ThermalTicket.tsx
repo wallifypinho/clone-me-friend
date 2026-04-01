@@ -2,6 +2,7 @@ import { QRCodeSVG } from "qrcode.react";
 
 interface ThermalTicketProps {
   companyName?: string;
+  companyLogo?: string;
   companyCnpj?: string;
   companyAddress?: string;
   companyCityUf?: string;
@@ -69,6 +70,7 @@ const formatCpf = (v: string) => {
 
 const ThermalTicket = ({
   companyName = "VIAÇÃO EXEMPLO S.A.",
+  companyLogo,
   companyCnpj,
   companyAddress,
   companyCityUf,
@@ -126,6 +128,11 @@ const ThermalTicket = ({
     >
       {/* Company header */}
       <div style={{ textAlign: "center", fontSize: "10px", lineHeight: "1.4", marginBottom: "4px" }}>
+        {companyLogo?.startsWith("http") && (
+          <div style={{ marginBottom: "4px" }}>
+            <img src={companyLogo} alt={companyName} style={{ height: "28px", maxWidth: "140px", objectFit: "contain", margin: "0 auto" }} />
+          </div>
+        )}
         <p style={{ fontWeight: 700, fontSize: "12px" }}>{companyName}</p>
         {companyCnpj && <p>CNPJ: {companyCnpj}</p>}
         {companyAddress && <p>{companyAddress}</p>}
