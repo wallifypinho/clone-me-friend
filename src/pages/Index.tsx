@@ -70,20 +70,12 @@ const Index = () => {
 
       {/* Hero + Search */}
       <section className="relative pb-[72px] md:pb-20">
-        <div className="brand-gradient-hero relative h-[220px] overflow-visible flex items-center justify-center px-4 py-4 md:h-[260px]">
-          <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-white/[0.06]" />
-          <div className="absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-white/[0.04]" />
-          <img
-            src={promoBanner}
-            alt="Promoção 15% OFF - Cupom COMPROUCOM15"
-            className="relative z-10 w-full max-h-full object-contain"
-          />
-
-          <div className="absolute left-0 right-0 -bottom-[60px] z-20">
-            <div className="container px-4">
-              <SearchForm />
-            </div>
-          </div>
+        <div
+          className="relative h-[220px] md:h-[260px] overflow-visible bg-center bg-cover bg-no-repeat"
+          style={{ backgroundImage: `url(${promoBanner})` }}
+        />
+        <div className="relative z-10 mx-auto -mt-[60px] max-w-4xl px-4">
+          <SearchForm />
         </div>
       </section>
 
