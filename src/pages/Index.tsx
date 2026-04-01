@@ -86,7 +86,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-      </section>
 
       {/* Best Prices */}
       <section className="py-12">
