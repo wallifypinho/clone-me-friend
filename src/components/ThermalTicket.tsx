@@ -130,7 +130,7 @@ const ThermalTicket = ({
       <div style={{ textAlign: "center", fontSize: "10px", lineHeight: "1.4", marginBottom: "4px" }}>
         {companyLogo && (
           <div style={{ marginBottom: "4px" }}>
-            <img src={companyLogo} alt={companyName} style={{ height: "28px", maxWidth: "140px", objectFit: "contain", margin: "0 auto" }} />
+            <img src={companyLogo} alt={companyName} style={{ height: "36px", maxWidth: "180px", objectFit: "contain", margin: "0 auto" }} />
           </div>
         )}
         <p style={{ fontWeight: 700, fontSize: "12px" }}>{companyName}</p>

@@ -437,7 +437,7 @@ const BoardingTicket = ({
     <div className="p-5">
     {logo && (
       <div className="flex justify-center mb-3">
-        <img src={logo} alt={company} className="h-8 max-w-[140px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+        <img src={logo} alt={company} className="h-12 max-w-[180px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
       </div>
     )}
     <div className="flex items-center justify-between mb-4">
