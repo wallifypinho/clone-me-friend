@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PasswordGate from "@/components/PasswordGate";
-import { ArrowLeft, Search, Eye, RefreshCw, Settings, LogOut, CheckCircle, Clock, XCircle, Key, CreditCard, Copy, Link, Check, Activity, Radio } from "lucide-react";
+import { ArrowLeft, Search, Eye, RefreshCw, Settings, LogOut, CheckCircle, Clock, XCircle, Key, CreditCard, Copy, Link, Check, Activity, Radio, Bus } from "lucide-react";
 import { toast } from "sonner";
 import MetaTab from "@/components/admin/MetaTab";
 import TrackingTab from "@/components/admin/TrackingTab";
 import DiagnosticsTab from "@/components/admin/DiagnosticsTab";
+import CompaniesTab from "@/components/admin/CompaniesTab";
 
 type Booking = {
   id: string;
@@ -82,7 +83,7 @@ const AdminPanel = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [tab, setTab] = useState<"bookings" | "gateway" | "meta" | "tracking" | "diagnostics" | "settings">("bookings");
+  const [tab, setTab] = useState<"bookings" | "gateway" | "meta" | "tracking" | "diagnostics" | "companies" | "settings">("bookings");
   const [newAdminPass, setNewAdminPass] = useState("");
   const [newUserPass, setNewUserPass] = useState("");
 
@@ -292,6 +293,7 @@ const AdminPanel = () => {
             { id: "meta" as const, label: "Meta", icon: <Radio className="w-4 h-4 inline mr-1" /> },
             { id: "tracking" as const, label: "Tracking", icon: <Radio className="w-4 h-4 inline mr-1" /> },
             { id: "diagnostics" as const, label: "Diagnóstico", icon: <Activity className="w-4 h-4 inline mr-1" /> },
+            { id: "companies" as const, label: "Companhias", icon: <Bus className="w-4 h-4 inline mr-1" /> },
             { id: "settings" as const, label: "Config", icon: <Settings className="w-4 h-4 inline mr-1" /> },
           ].map((t) => (
             <button
@@ -559,6 +561,9 @@ const AdminPanel = () => {
 
         {/* ===== DIAGNÓSTICO ===== */}
         {tab === "diagnostics" && <DiagnosticsTab />}
+
+        {/* ===== COMPANHIAS ===== */}
+        {tab === "companies" && <CompaniesTab />}
 
         {/* ===== CONFIGURAÇÕES ===== */}
         {tab === "settings" && (
