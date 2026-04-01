@@ -242,6 +242,7 @@ const Confirmacao = () => {
   }, [code]);
 
   const paymentStatus = paymentMethod === "pix" ? "awaiting_payment" : "pending";
+  const companyDetails = useCompanyDetails(company);
 
   return (
     <div className="min-h-screen bg-muted flex flex-col items-center">
