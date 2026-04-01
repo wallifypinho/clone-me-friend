@@ -59,7 +59,12 @@ const CompaniesTab = () => {
           <tbody>
             {companies.map((c) => (
               <tr key={c.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 font-medium text-foreground">{c.name}</td>
+                <td className="px-4 py-3 font-medium text-foreground">
+                  <div>{c.name}</div>
+                  {(c as any).razao_social && <div className="text-xs text-muted-foreground">{(c as any).razao_social}</div>}
+                </td>
+                <td className="px-4 py-3 hidden md:table-cell text-xs text-foreground">{(c as any).cnpj || "—"}</td>
+                <td className="px-4 py-3 hidden md:table-cell text-xs text-foreground">{(c as any).cidade && (c as any).estado ? `${(c as any).cidade} - ${(c as any).estado}` : "—"}</td>
                 <td className="px-4 py-3 text-center text-lg">{c.logo || "🚌"}</td>
                 <td className="px-4 py-3 text-center text-foreground">{c.priority}</td>
                 <td className="px-4 py-3 text-center">

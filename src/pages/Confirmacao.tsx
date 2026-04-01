@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import ThermalTicket from "@/components/ThermalTicket";
 import { analytics } from "@/lib/analytics";
+import { useCompanyDetails } from "@/hooks/useCompanyDetails";
 
 const Confirmacao = () => {
   const [searchParams] = useSearchParams();
