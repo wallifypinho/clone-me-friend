@@ -452,9 +452,13 @@ const BoardingTicket = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-        <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" /> {formatDate(data)}</span>
-        <span className="flex items-center gap-1"><Bus className="w-3 h-3" /> {company}</span>
+      <div className="text-xs text-muted-foreground mb-4 space-y-0.5">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" /> {formatDate(data)}</span>
+          <span className="flex items-center gap-1"><Bus className="w-3 h-3" /> {company} — {seatType}</span>
+        </div>
+        {cnpj && <p>CNPJ: {cnpj}</p>}
+        {cidadeEstado && <p>{cidadeEstado}</p>}
       </div>
 
       <div className="border-t border-dashed border-border pt-3 mb-3">
