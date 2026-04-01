@@ -293,6 +293,7 @@ const AdminPanel = () => {
             { id: "meta" as const, label: "Meta", icon: <Radio className="w-4 h-4 inline mr-1" /> },
             { id: "tracking" as const, label: "Tracking", icon: <Radio className="w-4 h-4 inline mr-1" /> },
             { id: "diagnostics" as const, label: "Diagnóstico", icon: <Activity className="w-4 h-4 inline mr-1" /> },
+            { id: "companies" as const, label: "Companhias", icon: <Bus className="w-4 h-4 inline mr-1" /> },
             { id: "settings" as const, label: "Config", icon: <Settings className="w-4 h-4 inline mr-1" /> },
           ].map((t) => (
             <button
