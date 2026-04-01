@@ -432,7 +432,12 @@ const BoardingTicket = ({
     </div>
 
     <div className="p-5">
-      <div className="flex items-center justify-between mb-4">
+    {logo && logo.startsWith("http") && (
+      <div className="flex justify-center mb-3">
+        <img src={logo} alt={company} className="h-8 max-w-[140px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+      </div>
+    )}
+    <div className="flex items-center justify-between mb-4">
         <div className="text-center">
           <p className="text-xs text-muted-foreground uppercase">Origem</p>
           <p className="font-bold text-foreground">{origem}</p>
