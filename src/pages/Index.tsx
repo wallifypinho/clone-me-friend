@@ -75,31 +75,12 @@ const Index = () => {
           <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/[0.06]" />
           <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-white/[0.04]" />
 
-          <div className="container relative z-10 px-5 py-6 md:py-10 text-center">
-            <h1 className="text-primary-foreground text-lg sm:text-xl md:text-3xl lg:text-4xl font-extrabold leading-tight mb-2">
-              Páscoa com economia...
-              <br />
-              pelo menos na passagem!
-            </h1>
-
-            {/* Promo banner */}
-            <div className="inline-flex flex-col items-center bg-brand-purple-dark/60 backdrop-blur-sm rounded-xl px-5 py-3 md:px-8 md:py-4 border border-white/20 mt-2">
-              <div className="flex items-baseline gap-2">
-                <p className="text-primary-foreground text-3xl md:text-5xl font-black leading-none">15%</p>
-                <span className="text-primary-foreground text-sm md:text-lg font-extrabold uppercase">OFF</span>
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] md:text-xs text-primary-foreground/70 uppercase">cupom:</span>
-                <span className="text-primary-foreground text-sm md:text-base font-bold tracking-wider bg-white/15 px-2.5 py-0.5 rounded">COMPROUCOM15</span>
-              </div>
-              <p className="text-[10px] md:text-xs text-primary-foreground/60 mt-1.5">
-                Pague também com <span className="font-bold text-primary-foreground/80 underline">PIX parcelado</span>
-              </p>
-            </div>
-
-            <p className="text-[10px] md:text-xs text-primary-foreground/50 mt-2 italic">
-              Desconto de 15% sem compra mínima. Válido enquanto durar o estoque.
-            </p>
+          <div className="container relative z-10 px-4 py-4 md:py-8 flex justify-center">
+            <img
+              src={promoBanner}
+              alt="Promoção 15% OFF - Cupom COMPROUCOM15"
+              className="w-full max-w-3xl h-auto rounded-lg"
+            />
           </div>
         </div>
 
