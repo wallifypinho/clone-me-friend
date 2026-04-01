@@ -48,6 +48,8 @@ const CompaniesTab = () => {
           <thead>
             <tr className="border-b border-border bg-muted/50">
               <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Nome</th>
+              <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden md:table-cell">CNPJ</th>
+              <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden md:table-cell">Sede</th>
               <th className="text-center px-4 py-3 font-semibold text-muted-foreground">Logo</th>
               <th className="text-center px-4 py-3 font-semibold text-muted-foreground">Prioridade</th>
               <th className="text-center px-4 py-3 font-semibold text-muted-foreground">Status</th>
@@ -57,7 +59,12 @@ const CompaniesTab = () => {
           <tbody>
             {companies.map((c) => (
               <tr key={c.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 font-medium text-foreground">{c.name}</td>
+                <td className="px-4 py-3 font-medium text-foreground">
+                  <div>{c.name}</div>
+                  {(c as any).razao_social && <div className="text-xs text-muted-foreground">{(c as any).razao_social}</div>}
+                </td>
+                <td className="px-4 py-3 hidden md:table-cell text-xs text-foreground">{(c as any).cnpj || "—"}</td>
+                <td className="px-4 py-3 hidden md:table-cell text-xs text-foreground">{(c as any).cidade && (c as any).estado ? `${(c as any).cidade} - ${(c as any).estado}` : "—"}</td>
                 <td className="px-4 py-3 text-center text-lg">{c.logo || "🚌"}</td>
                 <td className="px-4 py-3 text-center text-foreground">{c.priority}</td>
                 <td className="px-4 py-3 text-center">
@@ -76,7 +83,7 @@ const CompaniesTab = () => {
               </tr>
             ))}
             {companies.length === 0 && !loading && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Nenhuma companhia cadastrada</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Nenhuma companhia cadastrada</td></tr>
             )}
           </tbody>
         </table>

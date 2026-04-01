@@ -150,14 +150,18 @@ export type Database = {
           accepts_local: boolean
           accepts_long_distance: boolean
           accepts_metropolitan: boolean
+          cidade: string | null
+          cnpj: string | null
           created_at: string
           distance_max_km: number | null
           distance_min_km: number | null
+          estado: string | null
           id: string
           is_active: boolean
           logo: string | null
           name: string
           priority: number
+          razao_social: string | null
           updated_at: string
         }
         Insert: {
@@ -166,14 +170,18 @@ export type Database = {
           accepts_local?: boolean
           accepts_long_distance?: boolean
           accepts_metropolitan?: boolean
+          cidade?: string | null
+          cnpj?: string | null
           created_at?: string
           distance_max_km?: number | null
           distance_min_km?: number | null
+          estado?: string | null
           id?: string
           is_active?: boolean
           logo?: string | null
           name: string
           priority?: number
+          razao_social?: string | null
           updated_at?: string
         }
         Update: {
@@ -182,14 +190,18 @@ export type Database = {
           accepts_local?: boolean
           accepts_long_distance?: boolean
           accepts_metropolitan?: boolean
+          cidade?: string | null
+          cnpj?: string | null
           created_at?: string
           distance_max_km?: number | null
           distance_min_km?: number | null
+          estado?: string | null
           id?: string
           is_active?: boolean
           logo?: string | null
           name?: string
           priority?: number
+          razao_social?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import ThermalTicket from "@/components/ThermalTicket";
 import { analytics } from "@/lib/analytics";
+import { useCompanyDetails } from "@/hooks/useCompanyDetails";
 
 const Confirmacao = () => {
   const [searchParams] = useSearchParams();
@@ -241,6 +242,7 @@ const Confirmacao = () => {
   }, [code]);
 
   const paymentStatus = paymentMethod === "pix" ? "awaiting_payment" : "pending";
+  const companyDetails = useCompanyDetails(company);
 
   return (
     <div className="min-h-screen bg-muted flex flex-col items-center">
@@ -285,12 +287,16 @@ const Confirmacao = () => {
           seats={seats}
           seatType={seatType}
           total={total}
+          cnpj={companyDetails?.cnpj || undefined}
+          cidadeEstado={companyDetails?.cidade && companyDetails?.estado ? `${companyDetails.cidade} - ${companyDetails.estado}` : undefined}
         />
 
         {/* Hidden thermal ticket for PDF export */}
         <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
           <ThermalTicket
-            companyName={company || "VIAÇÃO EXEMPLO S.A."}
+            companyName={companyDetails?.razao_social || company || "VIAÇÃO EXEMPLO S.A."}
+            companyCnpj={companyDetails?.cnpj || undefined}
+            companyAddress={companyDetails?.cidade && companyDetails?.estado ? `${companyDetails.cidade} - ${companyDetails.estado}` : undefined}
             origem={origem}
             destino={destino}
             dataViagem={data}
@@ -409,11 +415,12 @@ const formatCPF = (v: string) => {
 
 const BoardingTicket = ({
   code, origem, destino, departure, arrival, data, company,
-  nome, cpf, seats, seatType, total,
+  nome, cpf, seats, seatType, total, cnpj, cidadeEstado,
 }: {
   code: string; origem: string; destino: string; departure: string;
   arrival: string; data: string; company: string; nome: string;
   cpf: string; seats: string; seatType: string; total: number;
+  cnpj?: string; cidadeEstado?: string;
 }) => (
   <div className="bg-card rounded-2xl border-2 border-primary overflow-hidden">
     <div className="bg-primary/10 px-5 py-3 flex items-center justify-between">
@@ -445,9 +452,13 @@ const BoardingTicket = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-        <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" /> {formatDate(data)}</span>
-        <span className="flex items-center gap-1"><Bus className="w-3 h-3" /> {company}</span>
+      <div className="text-xs text-muted-foreground mb-4 space-y-0.5">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" /> {formatDate(data)}</span>
+          <span className="flex items-center gap-1"><Bus className="w-3 h-3" /> {company} — {seatType}</span>
+        </div>
+        {cnpj && <p>CNPJ: {cnpj}</p>}
+        {cidadeEstado && <p>{cidadeEstado}</p>}
       </div>
 
       <div className="border-t border-dashed border-border pt-3 mb-3">
