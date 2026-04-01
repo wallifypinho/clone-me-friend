@@ -3,6 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 interface ThermalTicketProps {
   companyName?: string;
   companyLogo?: string;
+  companyCnpj?: string;
   companyAddress?: string;
   companyCityUf?: string;
   companyPhone?: string;
