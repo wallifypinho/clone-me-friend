@@ -296,6 +296,7 @@ const Confirmacao = () => {
         <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
           <ThermalTicket
             companyName={companyDetails?.razao_social || company || "VIAÇÃO EXEMPLO S.A."}
+            companyLogo={companyDetails?.logo || undefined}
             companyCnpj={companyDetails?.cnpj || undefined}
             companyAddress={companyDetails?.cidade && companyDetails?.estado ? `${companyDetails.cidade} - ${companyDetails.estado}` : undefined}
             origem={origem}
