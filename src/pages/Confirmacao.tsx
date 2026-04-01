@@ -7,6 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import ThermalTicket from "@/components/ThermalTicket";
 import { analytics } from "@/lib/analytics";
 import { useCompanyDetails } from "@/hooks/useCompanyDetails";
+import { getCompanyLogo } from "@/lib/companyLogos";
 
 const Confirmacao = () => {
   const [searchParams] = useSearchParams();
@@ -289,14 +290,14 @@ const Confirmacao = () => {
           total={total}
           cnpj={companyDetails?.cnpj || undefined}
           cidadeEstado={companyDetails?.cidade && companyDetails?.estado ? `${companyDetails.cidade} - ${companyDetails.estado}` : undefined}
-          logo={companyDetails?.logo || undefined}
+          logo={getCompanyLogo(company) || undefined}
         />
 
         {/* Hidden thermal ticket for PDF export */}
         <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
           <ThermalTicket
             companyName={companyDetails?.razao_social || company || "VIAÇÃO EXEMPLO S.A."}
-            companyLogo={companyDetails?.logo || undefined}
+            companyLogo={getCompanyLogo(company) || undefined}
             companyCnpj={companyDetails?.cnpj || undefined}
             companyAddress={companyDetails?.cidade && companyDetails?.estado ? `${companyDetails.cidade} - ${companyDetails.estado}` : undefined}
             origem={origem}
@@ -434,7 +435,7 @@ const BoardingTicket = ({
     </div>
 
     <div className="p-5">
-    {logo && logo.startsWith("http") && (
+    {logo && (
       <div className="flex justify-center mb-3">
         <img src={logo} alt={company} className="h-8 max-w-[140px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
       </div>

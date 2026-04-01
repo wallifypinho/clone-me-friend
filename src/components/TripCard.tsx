@@ -2,6 +2,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Trip } from "@/data/trips";
 import { Clock, ChevronRight, Flame } from "lucide-react";
 import { analytics } from "@/lib/analytics";
+import { getCompanyLogo } from "@/lib/companyLogos";
 
 interface TripCardProps {
   trip: Trip;
@@ -46,11 +47,14 @@ const TripCard = ({ trip }: TripCardProps) => {
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            {trip.companyLogo?.startsWith("http") ? (
-              <img src={trip.companyLogo} alt={trip.company} className="h-6 w-auto max-w-[80px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            ) : (
-              <span className="text-2xl">{trip.companyLogo || "🚌"}</span>
-            )}
+            {(() => {
+              const localLogo = getCompanyLogo(trip.company);
+              return localLogo ? (
+                <img src={localLogo} alt={trip.company} className="h-6 w-auto max-w-[80px] object-contain" />
+              ) : (
+                <span className="text-2xl">🚌</span>
+              );
+            })()}
             <span className="text-xs text-muted-foreground">Viaje Com {trip.company}</span>
           </div>
         </div>
