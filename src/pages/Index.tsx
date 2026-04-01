@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import Header from "@/components/Header";
 import SearchForm from "@/components/SearchForm";
-import promoBanner from "@/assets/promo-banner-mobile.avif";
+import promoBanner from "@/assets/promo-banner-mobile.png";
 import DestinationCard from "@/components/DestinationCard";
 import HomeSections from "@/components/HomeSections";
 import { analytics } from "@/lib/analytics";
@@ -70,12 +70,17 @@ const Index = () => {
 
       {/* Hero + Search */}
       <section className="relative pb-[72px] md:pb-20">
-        <div
-          className="relative h-[220px] md:h-[260px] overflow-visible bg-center bg-cover bg-no-repeat"
-          style={{ backgroundImage: `url(${promoBanner})` }}
-        />
-        <div className="relative z-10 mx-auto -mt-[60px] max-w-4xl px-4">
-          <SearchForm />
+        <div className="brand-gradient-hero relative h-[220px] overflow-visible flex items-center justify-center px-4 py-4 md:h-[260px]">
+          <img
+            src={promoBanner}
+            alt="Promoção 65% OFF - Cupom COMPROUCOM65"
+            className="relative z-10 h-full w-full object-contain"
+          />
+          <div className="absolute left-0 right-0 -bottom-[60px] z-20">
+            <div className="container px-4">
+              <SearchForm />
+            </div>
+          </div>
         </div>
       </section>
 
