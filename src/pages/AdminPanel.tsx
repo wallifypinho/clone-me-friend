@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import MetaTab from "@/components/admin/MetaTab";
 import TrackingTab from "@/components/admin/TrackingTab";
 import DiagnosticsTab from "@/components/admin/DiagnosticsTab";
+import CompaniesTab from "@/components/admin/CompaniesTab";
 
 type Booking = {
   id: string;
