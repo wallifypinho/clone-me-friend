@@ -290,7 +290,7 @@ const Confirmacao = () => {
           total={total}
           cnpj={companyDetails?.cnpj || undefined}
           cidadeEstado={companyDetails?.cidade && companyDetails?.estado ? `${companyDetails.cidade} - ${companyDetails.estado}` : undefined}
-          logo={companyDetails?.logo || undefined}
+          logo={getCompanyLogo(company) || undefined}
         />
 
         {/* Hidden thermal ticket for PDF export */}
