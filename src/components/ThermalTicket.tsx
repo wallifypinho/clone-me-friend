@@ -69,6 +69,7 @@ const formatCpf = (v: string) => {
 
 const ThermalTicket = ({
   companyName = "VIAÇÃO EXEMPLO S.A.",
+  companyLogo,
   companyCnpj,
   companyAddress,
   companyCityUf,
