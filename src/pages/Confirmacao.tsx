@@ -415,12 +415,12 @@ const formatCPF = (v: string) => {
 
 const BoardingTicket = ({
   code, origem, destino, departure, arrival, data, company,
-  nome, cpf, seats, seatType, total, cnpj, cidadeEstado,
+  nome, cpf, seats, seatType, total, cnpj, cidadeEstado, logo,
 }: {
   code: string; origem: string; destino: string; departure: string;
   arrival: string; data: string; company: string; nome: string;
   cpf: string; seats: string; seatType: string; total: number;
-  cnpj?: string; cidadeEstado?: string;
+  cnpj?: string; cidadeEstado?: string; logo?: string;
 }) => (
   <div className="bg-card rounded-2xl border-2 border-primary overflow-hidden">
     <div className="bg-primary/10 px-5 py-3 flex items-center justify-between">
