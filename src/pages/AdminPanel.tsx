@@ -562,6 +562,9 @@ const AdminPanel = () => {
         {/* ===== DIAGNÓSTICO ===== */}
         {tab === "diagnostics" && <DiagnosticsTab />}
 
+        {/* ===== COMPANHIAS ===== */}
+        {tab === "companies" && <CompaniesTab />}
+
         {/* ===== CONFIGURAÇÕES ===== */}
         {tab === "settings" && (
           <div className="space-y-4">
