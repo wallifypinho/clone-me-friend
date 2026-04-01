@@ -83,7 +83,7 @@ const AdminPanel = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [tab, setTab] = useState<"bookings" | "gateway" | "meta" | "tracking" | "diagnostics" | "settings">("bookings");
+  const [tab, setTab] = useState<"bookings" | "gateway" | "meta" | "tracking" | "diagnostics" | "companies" | "settings">("bookings");
   const [newAdminPass, setNewAdminPass] = useState("");
   const [newUserPass, setNewUserPass] = useState("");
 
