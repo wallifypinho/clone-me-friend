@@ -69,16 +69,14 @@ const Index = () => {
       <Header />
 
       {/* Hero + Search */}
-      <section className="relative pb-24 md:pb-28">
-        <div className="brand-gradient-hero relative mx-auto w-full rounded-b-3xl px-4 pt-4 pb-16 md:pb-20">
-          <img
-            src={promoBanner}
-            alt="Promoção 65% OFF - Cupom COMPROUCOM65"
-            className="mx-auto block w-full max-w-5xl h-auto object-contain"
-          />
-          <div className="absolute left-1/2 bottom-0 z-20 w-full max-w-4xl -translate-x-1/2 translate-y-1/2 px-4">
-            <SearchForm />
-          </div>
+      <section className="relative pb-8 lg:pb-28">
+        <img
+          src={promoBanner}
+          alt="Promoção 65% OFF - Cupom COMPROUCOM65"
+          className="block w-full h-auto object-contain"
+        />
+        <div className="px-4 pt-4 lg:absolute lg:left-1/2 lg:bottom-0 lg:z-20 lg:w-full lg:max-w-4xl lg:-translate-x-1/2 lg:translate-y-1/2 lg:px-4 lg:pt-0">
+          <SearchForm />
         </div>
       </section>
 
