@@ -7,6 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import ThermalTicket from "@/components/ThermalTicket";
 import { analytics } from "@/lib/analytics";
 import { useCompanyDetails } from "@/hooks/useCompanyDetails";
+import { getCompanyLogo } from "@/lib/companyLogos";
 
 const Confirmacao = () => {
   const [searchParams] = useSearchParams();
