@@ -294,7 +294,9 @@ const Confirmacao = () => {
         {/* Hidden thermal ticket for PDF export */}
         <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
           <ThermalTicket
-            companyName={company || "VIAÇÃO EXEMPLO S.A."}
+            companyName={companyDetails?.razao_social || company || "VIAÇÃO EXEMPLO S.A."}
+            companyCnpj={companyDetails?.cnpj || undefined}
+            companyAddress={companyDetails?.cidade && companyDetails?.estado ? `${companyDetails.cidade} - ${companyDetails.estado}` : undefined}
             origem={origem}
             destino={destino}
             dataViagem={data}
