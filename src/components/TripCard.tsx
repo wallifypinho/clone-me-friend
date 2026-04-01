@@ -2,6 +2,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Trip } from "@/data/trips";
 import { Clock, ChevronRight, Flame } from "lucide-react";
 import { analytics } from "@/lib/analytics";
+import { getCompanyLogo } from "@/lib/companyLogos";
 
 interface TripCardProps {
   trip: Trip;
