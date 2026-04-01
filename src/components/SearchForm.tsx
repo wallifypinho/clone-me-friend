@@ -158,34 +158,34 @@ const SearchForm = () => {
 
       {/* Dates side by side */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="border border-border rounded-xl px-4 py-2.5 hover:border-primary/40 transition-colors">
+        <div className="border border-border rounded-xl px-3 sm:px-4 py-2.5 hover:border-primary/40 transition-colors min-w-0 overflow-hidden">
           <label className="text-[11px] font-medium text-muted-foreground block tracking-wide">
             Data de ida
           </label>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 min-w-0">
             <Calendar className="w-4 h-4 text-primary shrink-0" />
             <input
               type="date"
               value={dataIda}
               onChange={(e) => setDataIda(e.target.value)}
-              className="w-full bg-transparent text-sm text-foreground outline-none"
+              className="w-full min-w-0 bg-transparent text-xs sm:text-sm text-foreground outline-none [&::-webkit-datetime-edit]:p-0 [&::-webkit-date-and-time-value]:min-h-[1.25rem]"
               required
             />
           </div>
         </div>
 
-        <div className={`border border-border rounded-xl px-4 py-2.5 transition-colors ${tripType === "ida" ? "opacity-40 pointer-events-none" : "hover:border-primary/40"}`}>
+        <div className={`border border-border rounded-xl px-3 sm:px-4 py-2.5 transition-colors min-w-0 overflow-hidden ${tripType === "ida" ? "opacity-40 pointer-events-none" : "hover:border-primary/40"}`}>
           <label className="text-[11px] font-medium text-muted-foreground block tracking-wide">
             Data de volta
           </label>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 min-w-0">
             <Calendar className="w-4 h-4 text-primary shrink-0" />
             <input
               type="date"
               value={dataVolta}
               onChange={(e) => setDataVolta(e.target.value)}
               disabled={tripType === "ida"}
-              className="w-full bg-transparent text-sm text-foreground outline-none"
+              className="w-full min-w-0 bg-transparent text-xs sm:text-sm text-foreground outline-none [&::-webkit-datetime-edit]:p-0 [&::-webkit-date-and-time-value]:min-h-[1.25rem]"
             />
           </div>
         </div>
