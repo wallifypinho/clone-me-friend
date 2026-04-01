@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import Header from "@/components/Header";
 import SearchForm from "@/components/SearchForm";
+import promoBanner from "@/assets/promo-banner.avif";
 import DestinationCard from "@/components/DestinationCard";
 import HomeSections from "@/components/HomeSections";
 import { analytics } from "@/lib/analytics";
