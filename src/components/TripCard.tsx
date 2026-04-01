@@ -50,7 +50,7 @@ const TripCard = ({ trip }: TripCardProps) => {
             {(() => {
               const localLogo = getCompanyLogo(trip.company);
               return localLogo ? (
-                <img src={localLogo} alt={trip.company} className="h-6 w-auto max-w-[80px] object-contain" />
+                <img src={localLogo} alt={trip.company} className="h-8 w-auto max-w-[120px] object-contain" />
               ) : (
                 <span className="text-2xl">🚌</span>
               );
