@@ -82,20 +82,20 @@ const TripCard = ({ trip }: TripCardProps) => {
         </div>
       </div>
 
-      <div className="border-t border-border px-5 py-3 flex items-center justify-between bg-muted/30">
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-foreground font-medium">{trip.seatType}</span>
+      <div className="border-t border-border px-5 py-3 flex items-center justify-between gap-2 bg-muted/30 overflow-hidden">
+        <div className="min-w-0 flex-shrink">
+          <span className="text-sm text-foreground font-medium block truncate">{trip.seatType}</span>
         </div>
 
         {trip.soldOut ? (
-          <span className="offer-badge-sold-out text-sm font-bold">ESGOTADO</span>
+          <span className="offer-badge-sold-out text-sm font-bold shrink-0">ESGOTADO</span>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <div>
-              <span className="offer-badge text-xs">% CLICKOFERTA</span>
+              <span className="offer-badge text-xs whitespace-nowrap">% CLICKOFERTA</span>
             </div>
             <div className="text-right">
-              <p className="text-xs text-muted-foreground line-through">
+              <p className="text-xs text-muted-foreground line-through whitespace-nowrap">
                 R$ {trip.originalPrice.toFixed(2).replace(".", ",")}
               </p>
               <p className="text-xl font-bold text-foreground whitespace-nowrap">
@@ -104,7 +104,7 @@ const TripCard = ({ trip }: TripCardProps) => {
             </div>
             <button
               onClick={handleSelect}
-              className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity"
+              className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity shrink-0"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
