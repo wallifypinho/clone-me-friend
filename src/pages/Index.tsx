@@ -70,19 +70,17 @@ const Index = () => {
 
       {/* Hero + Search */}
       <section className="relative">
-        {/* Purple gradient banner - compact height */}
-        <div className="brand-gradient-hero relative overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/[0.06]" />
-          <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-white/[0.04]" />
+        <div className="brand-gradient-hero relative h-[240px] max-h-[240px] overflow-hidden px-4 py-4 flex items-center justify-center md:h-[280px] md:max-h-[280px]">
+          <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-white/[0.06]" />
+          <div className="absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-white/[0.04]" />
           <img
             src={promoBanner}
             alt="Promoção 15% OFF - Cupom COMPROUCOM15"
-            className="relative z-10 w-full h-auto object-cover"
+            className="relative z-10 w-full h-full object-cover object-center"
           />
         </div>
 
-        {/* Search form - pulls up into the banner */}
-        <div className="relative z-20 -mt-8 md:-mt-12 pb-4">
+        <div className="relative z-20 -mt-10 pb-4">
           <div className="container px-4">
             <SearchForm />
           </div>
