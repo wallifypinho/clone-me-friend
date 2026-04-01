@@ -287,6 +287,8 @@ const Confirmacao = () => {
           seats={seats}
           seatType={seatType}
           total={total}
+          cnpj={companyDetails?.cnpj || undefined}
+          cidadeEstado={companyDetails?.cidade && companyDetails?.estado ? `${companyDetails.cidade} - ${companyDetails.estado}` : undefined}
         />
 
         {/* Hidden thermal ticket for PDF export */}
