@@ -216,12 +216,25 @@ const Confirmacao = () => {
     analytics.trackEvent('TicketDownloaded', { reservation_code: code });
     const el = document.getElementById("thermal-ticket");
     if (!el) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.error("Permita popups para baixar o PDF");
+
+    // Create a hidden iframe to print without leaving the page
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "0";
+    iframe.style.width = "400px";
+    iframe.style.height = "600px";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) {
+      toast.error("Não foi possível gerar o bilhete");
+      document.body.removeChild(iframe);
       return;
     }
-    printWindow.document.write(`
+
+    doc.open();
+    doc.write(`
       <html>
       <head>
         <title>Prévia de Reserva - ${code}</title>
@@ -236,9 +249,14 @@ const Confirmacao = () => {
       <body>${el.outerHTML}</body>
       </html>
     `);
-    printWindow.document.close();
+    doc.close();
+
     setTimeout(() => {
-      printWindow.print();
+      iframe.contentWindow?.print();
+      // Remove iframe after printing
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
     }, 400);
   }, [code]);
 
