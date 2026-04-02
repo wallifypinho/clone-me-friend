@@ -211,53 +211,82 @@ const Confirmacao = () => {
     return () => clearInterval(interval);
   }, [expiresAt, paymentMethod]);
 
-  // PDF download
-  const handleDownloadPdf = useCallback(() => {
+  // PDF download - auto-downloads as image without leaving the page
+  const handleDownloadPdf = useCallback(async () => {
     analytics.trackEvent('TicketDownloaded', { reservation_code: code });
     const el = document.getElementById("thermal-ticket");
     if (!el) return;
 
-    // Create a hidden iframe to print without leaving the page
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.left = "-9999px";
-    iframe.style.top = "0";
-    iframe.style.width = "400px";
-    iframe.style.height = "600px";
-    document.body.appendChild(iframe);
+    try {
+      // Use canvas to capture the ticket and trigger automatic download
+      const canvas = document.createElement("canvas");
+      const rect = el.getBoundingClientRect();
+      const scale = 2; // high-res
+      canvas.width = rect.width * scale;
+      canvas.height = rect.height * scale;
 
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!doc) {
-      toast.error("Não foi possível gerar o bilhete");
-      document.body.removeChild(iframe);
-      return;
-    }
+      // Use html2canvas-like approach via SVG foreignObject
+      const data = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${rect.width * scale}" height="${rect.height * scale}">
+          <foreignObject width="${rect.width}" height="${rect.height}" style="transform: scale(${scale}); transform-origin: top left;">
+            ${new XMLSerializer().serializeToString(el)}
+          </foreignObject>
+        </svg>`;
 
-    doc.open();
-    doc.write(`
-      <html>
-      <head>
-        <title>Prévia de Reserva - ${code}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { display: flex; justify-content: center; padding: 10px; background: white; }
-          @media print {
-            body { padding: 0; }
+      const img = new Image();
+      const svgBlob = new Blob([data], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = "white";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+        }
+        URL.revokeObjectURL(url);
+
+        // Trigger automatic download
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            toast.error("Não foi possível gerar o bilhete");
+            return;
           }
-        </style>
-      </head>
-      <body>${el.outerHTML}</body>
-      </html>
-    `);
-    doc.close();
+          const downloadUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = downloadUrl;
+          a.download = `bilhete-${code}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(downloadUrl);
+          toast.success("Bilhete baixado com sucesso!");
+        }, "image/png");
+      };
 
-    setTimeout(() => {
-      iframe.contentWindow?.print();
-      // Remove iframe after printing
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
-    }, 400);
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        // Fallback: use iframe print
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.left = "-9999px";
+        document.body.appendChild(iframe);
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (doc) {
+          doc.open();
+          doc.write(`<html><head><title>Bilhete - ${code}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{display:flex;justify-content:center;padding:10px;background:white}</style></head><body>${el.outerHTML}</body></html>`);
+          doc.close();
+          setTimeout(() => {
+            iframe.contentWindow?.print();
+            setTimeout(() => document.body.removeChild(iframe), 1000);
+          }, 400);
+        }
+      };
+
+      img.src = url;
+    } catch {
+      toast.error("Erro ao baixar bilhete");
+    }
   }, [code]);
 
   const paymentStatus = paymentMethod === "pix" ? "awaiting_payment" : "pending";
